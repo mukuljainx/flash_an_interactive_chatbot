@@ -1,0 +1,79 @@
+#warning! this file has been translated by a person who is not French.
+
+<dis> (LINE words)
+  say "$words$"
+<écris> (LINE words)
+  type "$words$\\r"
+annule
+  xType 'keydown Control_L' 'key z' 'keyup Control_L'
+refait
+  xType 'keydown Shift_L' 'keydown Control_L' 'key z' 'keyup Shift_L' 'keyup Control_L'
+coupe
+  xType 'keydown Control_L' 'key x' 'keyup Control_L'
+colle[ le texte]
+  xType 'keydown Control_L' 'key v' 'keyup Control_L'
+copie[ <le texte,la sélection>]
+  xType 'keydown Control_L' 'key c' 'keyup Control_L'
+tout sélectionner
+  xType 'keydown Control_L' 'key a' 'keyup Control_L'
+
+va à (LINE site)
+  goto "$site$"
+  
+<ouvre,montre>[ le dossier des] <mes documents,mes fichiers>
+  open 'xdg-open `xdg-user-dir DOCUMENTS`'
+<ouvre,montre>[ le dossier de] <ma musique,mes fichiers musicaux>
+  open 'xdg-open `xdg-user-dir MUSIC`'
+<ouvre,montre> mon dossier
+  open 'xdg-open `xdg-user-dir`'
+<ouvre,montre>[ le dossier de] <mes vidéos,mes fichiers vidéo>
+  open 'xdg-open `xdg-user-dir VIDEOS`'
+<ouvre,montre>[ le dossier de] <mes images,mes fichiers image>
+  open 'xdg-open `xdg-user-dir PICTURES`'
+<ouvre,montre>[ le dossier de][ mes] fichiers téléchargés
+  open 'xdg-open `xdg-user-dir DOWNLOAD`'
+
+<cherche,google> (LINE question)
+  goto "http://www.google.com/search?q=$question$"
+<wolfram,wolf RAM>[ alpha] (LINE question)
+  goto "www.wolframalpha.com/input/?i=$question$"
+youtube (LINE video)
+  goto "https://www.youtube.com/results?search_query=$video$"
+
+ou est[ il] (LINE place)
+  goto "https://maps.google.com/maps?q=$place$&hl=\$LANG"
+  
+ouvre [google ]chrome
+  open 'google-chrome'
+  
+ouvre firefox
+  open 'firefox'
+
+ouvre <word,excel,openoffice,libreoffice,liber office>
+  open 'libreoffice'
+
+ouvre (WORD app)
+  open '$app$'
+
+date
+  date date
+
+[<montre,dit moi> ]quel jour sommes-nous
+  date date
+[<montre,dit moi> ]quelle heure est-il
+  date time
+  
+[<montre,dit moi> ]la météo aujourd'hui
+  weather
+
+[<montre,dit moi> ]quelle est mon IP
+  UserInformation ip
+[<montre,dit moi> ]<mon mon,comment je m'appelle>
+  UserInformation name
+  
+<mode,modalité> dictation
+    mode dictation
+  
+(LINE word)
+  wolf "$word$"
+

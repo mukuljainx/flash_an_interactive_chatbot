@@ -1,0 +1,1278 @@
+#!/usr/bin/env python2.7
+# -*- coding: utf-8 -*- 
+VERSION = 1.2
+
+import subprocess,sys,platform,tarfile,os,argparse,shutil,urllib2,time,json,socket,zipfile,serial,dbus,getpass
+
+import sqlite3 as sql
+
+#from gi.repository import Gtk
+
+import commands
+
+FILEFOLDER="/tmp/lispeak_" + getpass.getuser()
+os.system("mkdir -p " + FILEFOLDER)
+
+try:
+    from dbus.mainloop.glib import DBusGMainLoop
+except ImportError:
+    from dbus.mainloop.qt.DBusQtMainLoop import DBusGMainLoop
+    #if none exists, an ImportError will be throw
+DBusGMainLoop(set_as_default=True)
+bus = None
+
+DEPENDS_PAGE = 1
+USER_INFO_PAGE = 2
+PLUGIN_PAGE = 3
+EXIT_PAGE = 4
+
+home = subprocess.Popen("echo $HOME", shell=True, stdout=subprocess.PIPE).communicate()[0].replace('\n','')
+root = home + "/.lispeak"
+
+approvedDistros = {"Ubuntu":["13.10","14.04"],"LinuxMint":["15"],"Elementary OS":["0.2"]}
+
+languages = {}
+
+from urllib import urlencode
+
+class arduino():
+    def __init__(self,com,speed=9600):
+        self.com = serial.Serial(com,speed)
+    def close(self,com):
+        self.com.close()
+    def sendText(self,text):
+        self.com.write(str(text))
+class PopUp:
+    def __init__(self,data,path):
+        print "Loading PopUp"
+        filename = installDir+"/Setup/templates/plugininstall.glade"
+        self.builder = Gtk.Builder()
+        print "Builder Created"
+        self.builder.add_from_file(filename)
+        print "File Loaded"
+        self.builder.connect_signals(self)
+        print "Builder Loaded"
+        self.window = self.builder.get_object("window1")
+        self.window.set_title("LiSpeak - Install Plugin")
+        self.notebook = self.builder.get_object("notebook1")
+        #self.exit = self.builder.get_object("btnClose")
+        #self.exit.connect("button-release-event",self.close)
+        self.name = self.builder.get_object("lblName")
+        self.name2 = self.builder.get_object("lblName2")
+        self.depends = self.builder.get_object("lblDepends")
+        self.spin = self.builder.get_object("spinner")
+        self.btnInstall = self.builder.get_object("btnInstall")
+        self.btnInstall.connect("button-release-event",self.install)
+        self.name.set_text(data['name'])
+        
+        self.name2.set_text(data['name'])
+        if 'depends' in data:
+            self.depends.set_text("\n".join(data['depends']))
+        else:
+            self.depends.set_text("None")
+        print "Showing PopUp"
+        self.window.show_all()
+        self.data = data
+        self.path = path
+    
+    def install(self,a,b):
+        print "Installing"
+        self.notebook.next_page()
+        self.spin.start()
+        self.installPlugin(self.path,parent=self)
+        self.notebook.next_page()
+        self.window.destroy()
+        Gtk.main_quit()
+        
+    def refresh(self):
+        while Gtk.events_pending():
+            Gtk.main_iteration_do(True)
+class IPInfo() :
+    def __init__(self, apikey):
+        self.apikey = apikey
+
+    def get_ip_info(self, baseurl, ip=None):
+        passdict = {'format': 'json', 'key': self.apikey}
+        if ip:
+            try:
+                passdict['ip'] = socket.gethostbyaddr(ip)[2][0]
+            except socket.herror:
+                passdict['ip'] = ip
+        url = baseurl + "?" + urlencode(passdict)
+        urlobj = urllib2.urlopen(url)
+        data = urlobj.read()
+        urlobj.close()
+        datadict = json.loads(data)
+        return datadict
+
+    def get_country(self, ip=None):
+        baseurl = 'http://api.ipinfodb.com/v3/ip-country/'
+        return self.get_ip_info(baseurl, ip)
+
+    def get_city(self, ip=None):
+        baseurl = 'http://api.ipinfodb.com/v3/ip-city/'
+        return self.get_ip_info(baseurl, ip)
+
+class InstallGUI:
+    def __init__(self, userinfo = None):
+        filename = installDir+"/Setup/templates/setup.glade"
+        self.builder = Gtk.Builder()
+        self.builder.add_from_file(filename)
+        self.builder.connect_signals(self)
+        self.window = self.builder.get_object("window1")
+        try:
+            self.window.set_icon_from_file(get_resource_path("Microphone/Indicator/mic.png"))
+        except:
+            pass
+        self.notebook = self.builder.get_object("ntbMain")
+        self.nButton = self.builder.get_object("btnNext")
+        self.nButton.connect("clicked", self.nextPage)
+        self.cButton = self.builder.get_object("btnCenter")
+        self.cButton.connect("clicked", self.centerClick)
+        self.pButton = self.builder.get_object("btnBack")
+        self.pButton.connect("clicked", self.prevPage)
+        self.aButton = self.builder.get_object("btnAbort")
+        self.aButton.connect("clicked", Gtk.main_quit)
+        self.window.set_title("LiSpeak Installation")
+        self.window.show_all()
+        self.window.connect("destroy", Gtk.main_quit)
+        self.bxPlugins = self.builder.get_object("bxPlugins")
+        self.notebook.append_page(self.bxPlugins,Gtk.Label("None"))
+        self.builder.get_object("lblWelcome").set_text("Welcome to LiSpeak v"+str(VERSION))
+        self.bxDone = self.builder.get_object("bxDone")
+        self.notebook.append_page(self.bxDone,Gtk.Label("None1"))
+        
+        set_combo_active_text(self.builder.get_object("cbtLang"), "English")
+        self.pButton.set_visible(False)
+        self.askOnly = False
+        if userinfo == None:
+            self.processPage(0)
+        else:
+            self.notebook.set_current_page(USER_INFO_PAGE)
+            self.askOnly = True
+            self.processPage(USER_INFO_PAGE) 
+        self.loadedPlugins = False
+        self.status = "cancel"
+        
+        if userinfo != None:
+            self.fillFields(userinfo)
+        
+    def centerClick(self,widget):
+        num = self.notebook.get_current_page()
+        if num == DEPENDS_PAGE:
+            cmd = self.needs
+            cmd.insert(0,"pkexec")
+            cmd.insert(1,"apt-get")
+            cmd.insert(2,"install")
+            cmd.append("-y")
+            output("Installing dependencies...") #could be a message in some status bar
+            subprocess.check_call(cmd)
+            self.nextPage()   
+        elif num == PLUGIN_PAGE:
+            x = 0
+            for p,label,switch in self.plugins:
+                if switch.get_active():
+                    x = x + 1
+                    downloadPackage(p)       
+            self.nextPage()
+        
+    def processPage(self,num,forward=True):
+        if self.askOnly and num != USER_INFO_PAGE:
+            self.status = "saved"
+            Gtk.main_quit()
+            return
+        if num != 0 and not self.askOnly:
+            self.pButton.set_visible(True)
+        else:
+            self.pButton.set_visible(False)
+        if num in [DEPENDS_PAGE,PLUGIN_PAGE]:
+            self.cButton.set_visible(True)
+        else:
+            self.cButton.set_visible(False)
+        if num == EXIT_PAGE:
+            self.nButton.set_label("Exit")
+            self.aButton.set_visible(False)
+        elif self.askOnly:
+            self.nButton.set_label("Save")
+            self.aButton.set_visible(False)
+        elif num == PLUGIN_PAGE:
+            self.nButton.set_label("Skip")
+        else:
+            self.nButton.set_label("Continue")
+        if num == DEPENDS_PAGE:
+            self.nButton.set_label("Skip Dependencies")
+            output("Calculating dependencies...")   #could be a message in some status bar
+            depends = ["sox","wget","espeak","xautomation","xvkbd","python-appindicator","xdotool","mpg123","python-alsaaudio"]
+            self.needs = []
+            try:
+                resp = commands.getstatusoutput("dpkg --get-selections | grep -v deinstall > " + FILEFOLDER + "/packages")[1]
+                installed = []
+                with open(FILEFOLDER + "/packages") as pack:
+                    for l in pack:
+                        if ":" in l:
+                            l = l.split(":")[0]
+                        installed.append(l.replace("\t","").replace(" ","").replace("install","").replace("\n",""))
+                for d in depends:
+                    if d not in installed:
+                        self.needs.append(d)
+                if len(self.needs) == 0:
+                    if forward:
+                        self.notebook.next_page()
+                    else:
+                        self.notebook.prev_page()
+                    new = self.notebook.get_current_page()
+                    self.processPage(new)
+                else:
+                    self.dlist = self.builder.get_object("lblDependsList")
+                    text = ""
+                    for n in self.needs:
+                        text = text + n + "\n"
+                    self.dlist.set_text(text)
+            except:
+                debug("Error Checking For Dependencies")
+                self.notebook.next_page()   
+        elif num == PLUGIN_PAGE and self.loadedPlugins == False:
+            self.newPlugins = []
+            output("Fetching plugins list...")   #could be a message in some status bar
+            plugins = urllib2.urlopen("http://lispeak.bmandesigns.com/functions.php?f=corePlugins").read().split("|#|")
+            for p in plugins:
+                if p != "":
+                    self.newPlugins.append(p)
+            self.pluginGrid = self.builder.get_object("grdPluginList")
+            self.plugins = []
+            x = 0
+            for p in self.newPlugins:
+                label = Gtk.Label(p)
+                switch = Gtk.Switch()
+                switch.set_active(True)
+                switch.set_halign(Gtk.Align.CENTER)
+                switch.set_valign(Gtk.Align.CENTER)
+                self.pluginGrid.attach(label,0,x,1,1)
+                self.pluginGrid.attach(switch,1,x,1,1)
+                label.show()
+                switch.show()
+                self.plugins.append([p,label,switch])
+                x = x + 1
+            self.loadedPlugins = True
+            
+    def nextPage(self,widget=None):
+        if self.notebook.get_current_page() == USER_INFO_PAGE:
+            self.userinfo = {}
+            for e in ['first','last','email']:
+                self.userinfo[e.upper()] = self.builder.get_object('ent'+e[0].upper()+e[1:]).get_text()
+            self.userinfo["TTSENGINE"] = str(self.builder.get_object("cbtTTS").get_active_text())
+            self.userinfo["TTS"] = str(self.builder.get_object("swEspeak").get_active())
+            self.userinfo["PROXY"] = False
+            self.userinfo["VERSION"] = VERSION
+            lang = str(self.builder.get_object("cbtLang").get_active_text())
+            languages = {"English":"en","Polski":'pl',"Español":'es',"Français":'fr',"Italiano":"it"}
+            self.userinfo['LANG'] = languages[lang]
+            if self.userinfo["TTSENGINE"] == "pico2wave":
+                checkDepends(["libttspico0","libttspico-utils","libttspico-data"])
+            self.userinfo["AUTOSTART"] = str(self.builder.get_object("swAutostart").get_active())
+            writeInfo(self.userinfo)
+            if self.userinfo["AUTOSTART"] == "True":
+                self.autostart(True)
+            else:
+                self.autostart(False)
+        elif self.notebook.get_current_page() == EXIT_PAGE:
+            self.status = "good"
+            Gtk.main_quit()
+        self.notebook.next_page()
+        new = self.notebook.get_current_page()
+        
+        self.processPage(new,True)
+    
+    def prevPage(self,widget):
+        self.notebook.prev_page()
+        new = self.notebook.get_current_page()
+        self.processPage(new,False)
+    
+    def fillFields(self, userinfo):
+        for e in ['first','last','email']:
+            if e.upper() in userinfo:
+                self.builder.get_object('ent'+e[0].upper()+e[1:]).set_text(userinfo[e.upper()])
+        if "LANG" in userinfo:
+            combo = self.builder.get_object("cbtLang")
+            languages_back = {"en":"English","pl":"Polski",'es':'Español','fr':'Français',"it":"Italiano"}
+            set_combo_active_text(combo, languages_back[userinfo["LANG"]])
+        if "TTS" in userinfo:
+            self.builder.get_object("swEspeak").set_active(userinfo["TTS"] == "True")
+        if "TTSENGINE" in userinfo:
+            combo = self.builder.get_object("cbtTTS")
+            set_combo_active_text(combo, userinfo["TTSENGINE"])
+        if "AUTOSTART" in userinfo:
+            self.builder.get_object("swAutostart").set_active(userinfo["AUTOSTART"] == "True")
+        #ARDUINO will be overwritten with default
+    
+def set_combo_active_text(combo, text):
+    model = combo.get_model()
+    for i in range(len(model)):
+        if model[i][0] == text:
+            combo.set_active(i)
+    
+def checkVersion():
+    i = getInfo()
+    if 'VERSION' in i:
+        if str(VERSION) != getInfo()['VERSION']:
+            print "Please run the setup again. The new version requires it."
+            sys.exit()
+    else:
+        print "Please run the setup again. The new version requires it."
+        sys.exit()
+
+def checkDepends(depends):
+    needs = []
+    try:
+        resp = commands.getstatusoutput("dpkg --get-selections | grep -v deinstall > " + FILEFOLDER + "/packages")[1]
+        installed = []
+        with open(FILEFOLDER + "/packages") as pack:
+            for l in pack:
+                if ":" in l:
+                    l = l.split(":")[0]
+                installed.append(l.replace("\t","").replace(" ","").replace("install","").replace("\n",""))
+        for d in depends:
+            if d not in installed:
+                needs.append(d)
+        if len(needs) > 0:
+            start = ["pkexec","apt-get","install"]
+            for e in needs:
+                start.append(e)
+            start.append("-y")
+            subprocess.check_call(start)
+    except:
+        debug("Error Checking For Dependencies")
+    try:
+        delete(FILEFOLDER + "/packages")
+    except:
+        debug("Could not delete \"" + FILEFOLDER + "/packages\"")
+    
+
+def displayInstaller(userinfo= None):
+    from gi.repository import Gtk as gtk
+    app = InstallGUI(userinfo)
+    app.autostart = autostart
+    Gtk.main()
+    return app
+
+def yn(text = "Continue?",exit=False):
+    if force == False:
+        yna = raw_input(translate(text)+" (y/n) ")
+        if yna.lower() in ['yes','y','sure','why not','go for it','have at it','okay','yup','yep']:
+            return True
+        else:
+            if exit == True:
+                sys.exit(1)
+            else:
+                return False
+    else:
+        return True
+def speak(words,skip=False):
+    if getInfo()['TTS'] == "True" or skip:
+        createDirectory("/tmp/LiSpeak_TTS")
+        print "Speaking:",words
+        if type(words) == list:
+            for w in words:
+                speak(w)
+        else:
+            try:
+               words = words.encode("utf-8")
+            except:
+               words = str(words)
+            engine = getSingleInfo("TTSENGINE")
+            print "Lower Volume"
+            p = subprocess.Popen(['pactl', 'list','sink-inputs'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            out, err = p.communicate()
+            start = 0
+            locs = []
+            while "#" in out[start:]:
+                loc = out.find("#",start)
+                text = out[loc+1]
+                plus = 2
+                while out[loc+plus] not in [" ","\n","D"]:
+                    text += out[loc+plus]
+                    plus = plus + 1
+                print text
+                locs.append(text)
+                start = loc+1
+            
+            for e in range(65530,40000,-400):
+                for text in locs:
+                    subprocess.call(["pactl","set-sink-input-volume",text,str(e)])
+            if engine == "espeak":
+                os.system("espeak -a 200 \""+words+"\"")
+            elif engine == "Google TTS":
+                os.system("wget -q -U Mozilla -O /tmp/LiSpeak_TTS/audio.mp3 \"http://translate.google.com/translate_tts?ie=UTF-8&tl="+getSingleInfo("LANG")+"&q="+words+"\"")
+                os.system("mpg123 /tmp/LiSpeak_TTS/audio.mp3 &> /dev/null")
+            elif engine == "pico2wave":
+                checkDepends(["libttspico0","libttspico-utils","libttspico-data"])
+                os.system("pico2wave --wave=/tmp/LiSpeak_TTS/audio.wav \""+words+"\"")
+                os.system("aplay /tmp/LiSpeak_TTS/audio.wav &> /dev/null")
+            time.sleep(4)
+            for e in range(40000,65535,400):
+                for text in locs:
+                    subprocess.call(["pactl","set-sink-input-volume",text,str(e)])
+            for text in locs:
+                subprocess.call(["pactl","set-sink-input-volume",text,str(65535)])
+def setup():
+    call("./stop")
+    installDir = os.path.dirname(os.path.realpath(__file__))
+    displayOSWarning()
+    delete([installDir+"/Recognition/modes/main.dic",installDir+"/Recognition/bin/",root,installDir+"/Recognition/dictionary.c"])
+    createDirectory([root, root+"/modes", root+"/bin", root+"/services"])
+    touch(installDir+"/Recognition/dictionary.c")
+    cd("Recognition")
+    call("make")
+    cd(installDir)
+    touch([home+"/.lispeak/UserInfo",root+"/plugins.db",root+"/plugins.dic",installDir+"/Recognition/modes/main.dic",root+"/MODE"])
+    copy([
+        [installDir+"/Setup/defaults/bin/",      installDir+"/Recognition/bin/"],
+        [installDir+"/Setup/languages/", root+"/configs/"]
+    ])
+    gui = displayInstaller()
+    if gui.status == "good":
+        os.system("nohup Recognition/bin/goto 'http://lispeak.bmandesigns.com/thanks' > \"" + FILEFOLDER + "/nohup.out\" 2>&1 ")
+        os.system("./start")
+        writeSingleInfo("ROOTDIR",installDir,"UserInfo",False,False)
+        lang = getInfo()['LANG']
+        copy(installDir+"/Setup/defaults/modes/"+lang+"/", root+"/modes/")
+        if os.path.exists("/usr/share/gtksourceview-2.0/language-specs/"):
+            sudo(["cp",installDir+"/Setup/lidic.lang","/usr/share/gtksourceview-2.0/language-specs/"])
+        if os.path.exists("/usr/share/gtksourceview-3.0/language-specs/"):
+            sudo(["cp",installDir+"/Setup/lidic.lang","/usr/share/gtksourceview-3.0/language-specs/"])
+    elif gui.status != "saved":
+        output("Installation failed.")
+        
+def askInfo():
+    gui = displayInstaller(getInfo())
+    if gui.status == "saved":
+        os.system("nohup Recognition/bin/goto 'http://lispeak.bmandesigns.com/thanks' > \"" + FILEFOLDER + "/nohup.out\" 2>&1 ")
+        os.system("./start")
+        writeSingleInfo("ROOTDIR",installDir,"UserInfo",False,False)
+        lang = getInfo()['LANG']
+        copy(installDir+"/Setup/defaults/modes/"+lang+"/", root+"/modes/")
+    else:
+        output("Installation failed.")
+def loadLanguage(lang="en"):
+    languages[lang.lower()] = getInfo("Language-"+lang.lower())
+def copyLibraries():
+    if not os.path.exists(installDir+"/Recognition/bin"):
+        createDirectory(installDir+"/Recognition/bin")
+    libraries = os.listdir(installDir+"/Setup/libraries")
+    for l in libraries:
+        copy(installDir+"/Setup/libraries/"+l,[installDir+"/"+l,installDir+"/Recognition/bin/"+l])
+def downloadPackage(name,key="name",install=True):
+    createDirectory("/tmp/LiSpeak_FILES")
+    f = urllib2.urlopen("http://lispeak.bmandesigns.com/functions.php?f=download&t="+key+"&s="+str(name))
+    with open('/tmp/LiSpeak_FILES/tmp.tar.gz', "wb") as local_file:
+        local_file.write(f.read())
+    time.sleep(0.2)
+    installPlugin('/tmp/LiSpeak_FILES/tmp.tar.gz')
+    delete("/tmp/LiSpeak_FILES/tmp.tar.gz")
+def sudo(cmd):
+    cmd.insert(0,"pkexec")
+    try:
+        subprocess.check_call(cmd)
+    except subprocess.CalledProcessError, e:
+        output("Command terminated with error: %s. Return code: %d",True,False, " ".join(cmd), e.returncode)
+    if quiet:
+        display = False
+    else:
+        if debug:
+            display = True
+        else:
+            display = False
+def translate(text,lang=False):
+    text = str(text).replace("\n"," _NL_ ").replace("\t"," _TB_ ").replace("%s"," _VS_ ").replace("%d"," _VD_ ").strip()
+    paths = []
+    replaces = []
+    x = 0
+    while "^" in text:
+        scan = False
+        ntext = ""
+        ntext2 = ""
+        for l in text:
+            if l == "^" and scan == False:
+                scan = True
+                ntext2 = ntext2 + l
+            elif l != "^" and scan == True:
+                ntext = ntext + l
+                ntext2 = ntext2 + l
+            elif l == "^" and scan == True:
+                ntext2 = ntext2 + l
+                scan = False
+                break
+        if ntext != "":
+            replaces.append(ntext)
+            text = text.replace(ntext2,"_NT"+str(x)+"_")
+        x = x + 1
+    x = 0
+    while "/" in text:
+        scan = False
+        path = ""
+        for l in text:
+            if l == "/":
+                scan = True
+                path = path + l
+            elif l != " " and scan == True:
+                path = path + l
+            elif l == " " and scan == True:
+                scan = False
+                break
+        if path != "":
+            paths.append(path)
+            text = text.replace(path,"_PATH"+str(x)+"_")
+        x = x + 1
+    
+    if lang == False or lang == "":
+        try:
+            lang = getSingleInfo("lang")
+        except:
+            pass
+    if lang == False or lang == "":
+        try:
+            lang = os.environ['LANG'][0:2]
+        except:
+            pass
+    if lang == False or lang == "":
+        lang = "en"
+    if lang not in languages:
+        loadLanguage(lang)
+    if text in languages[lang.lower()]:
+        rtext = languages[lang.lower()][text]
+    else:
+        try:
+            rtext = gt.translate(text+" _END_ _END_",lang).encode('utf8')
+            if os.path.exists(root+"/configs/"):  
+                touch(root+"/configs/Language-"+lang.lower(),False)
+                writeSingleInfo(text,rtext.replace("_END_",""),"Language-"+lang.lower(),False,False)
+                debug("Writing New Translation: "+text,False)
+        except:
+            rtext = text
+            print("ERROR WRITING TRANSLATION")
+    x = 0
+    for p in paths:
+        rtext = rtext.replace("_PATH"+str(x)+"_",p)
+        x = x + 1
+    x = 0
+    for p in replaces:
+        rtext = rtext.replace("_NT"+str(x)+"_",p)
+        x = x + 1
+    return rtext.replace("_END_","").replace("_NL_","\n").replace("_TB_","\t").replace("_VD_","%d").replace("_VS_","%s")
+def dialogInfo(text,title="LiSpeak",notrans="",term=True,*args):
+    debug("Creating Info Dialog: "+text)
+    if term == True:
+        output(text,True,False,*args)
+    call(["zenity","--info","--text="+translate(text)%args+notrans,"--title="+translate(title)+""])
+def dialogPrompt(text="Continue",title="LiSpeak",exit=False,*args):
+    text = translate(text)%args
+    p = subprocess.Popen("zenity --question --text='"+text+"' --title="+translate(title)+"",shell=True,stderr=subprocess.PIPE)
+    error = p.stderr.read()
+    p.communicate()
+    if "cannot open display" in error:
+        return yn(text,exit)
+    else:
+        if p.returncode:
+            if exit == False:
+                return False
+            else:
+                sys.exit(1)
+        else:
+            return True
+def cd(path):
+    if not path.startswith("/"):
+        path = os.getcwd()+"/"+path
+    debug("Entering Directory: "+path)
+    os.chdir(path)
+def call(cmd,hide=True):
+    if type(cmd) == str:
+        cmd = [cmd]
+    with open(os.devnull, 'wb') as devnull:
+        debug("Calling Command: "+str(cmd))
+        if hide==True:
+            subprocess.check_call(cmd, stdout=devnull, stderr=subprocess.STDOUT)
+        else:
+            subprocess.check_call(cmd)
+def displayOSWarning():
+    d,v,j = platform.linux_distribution()
+    d = d.replace("\"","").replace("elementary OS","Elementary OS")
+    if d != "":
+        if d in approvedDistros:
+            if v in approvedDistros[d]:
+                output(str(d)+" "+str(v)+" ("+str(j.title())+") "+" is a supported operating system",True,False)
+            else:
+                dialogPrompt(text = str(d) +" is a supported operating system, but has not been tested on "+str(v)+" ("+str(j.title())+") "+"\nLiSpeak may not work properly.\n\nDo you want to continue?",exit=True)
+        else:
+            dialogPrompt(text=str(d)+" "+str(v)+" ("+str(j.title())+") "+" is NOT a supported operating system.\nLiSpeak may not work properly.\n\nDo you want to continue?",exit=True)
+    else:
+        dialogPrompt(text="Your operating system could not be detected.\nLiSpeak may not work properly.\n\nDo you want to continue?",exit=True)
+def touch(path,out=True):   
+    if type(path)==str:
+        if not os.path.exists(os.path.dirname(path)):
+            createDirectory(os.path.dirname(path))
+        if out:
+            debug("Touching File: "+path)
+        os.system("touch "+path)
+    elif type(path)==list:
+        for p in path:
+            touch(p)
+
+#Ororo: this should be discussed.
+#I would like to have "variables" in translated labels, similar to gettext
+#e.g. text="%s %s is a supported operating system"
+#see https://www.gnu.org/software/gettext/manual/gettext.html#Preparing-Strings
+#However, parameters trans and debug become compulsory! Can be avoided?
+def output(text="",trans=True,debug=False,*args):
+    if quiet == False:
+        if (debug == True and debugMode == True) or (not debug):
+            result = ""
+            if trans:
+                result = translate(text)
+            else:
+                result = text
+            result = result % args
+            print result
+        
+def debug(text,trans=True,*args):
+    output(text,trans,True,*args)
+        
+def parseData(text):
+    oData = text.split("\n")
+    orig = {}
+    for e in oData:
+        if e.strip().startswith("#") == False and "=" in e:
+            pre,suf = e.strip().split("=",1)
+            suf = suf.strip()
+            if pre in ['depends','types','lang','configs']:
+                data = []
+                for d in suf.split(','):
+                    data.append(d)
+                suf = data
+            orig[pre.strip()] = suf
+    return orig
+    
+def getInfo(plugin="UserInfo"):
+    try:
+        if plugin == "UserInfo":
+            oFile = open(root+"/UserInfo")
+        else:
+            oFile = open(root+"/configs/"+plugin)
+        oData = oFile.read()
+        oFile.close()
+        return parseData(oData)
+    except:
+        return {}
+    
+def homeDir():
+    return home 
+
+def displayNotification(text,text2 = False,image=False,speech=True):
+    try:
+        global bus
+        data = formatNotification(text,text2,image,speech)
+        if bus == None:
+            bus = dbus.SessionBus()
+        proxy_obj = bus.get_object("com.bmandesigns.lispeak.notify", "/com/bmandesigns/lispeak/notify")
+        proxy_iface = dbus.Interface(proxy_obj, "com.bmandesigns.lispeak.notify")
+        proxy_iface.create_notification(data)
+    except:
+        print "Error while displaying notification"
+    
+def formatNotification(text,text2 = False,image=False,speech=None):
+    if type(text) != dict:
+        data = dbus.Dictionary({'title':text,'message':text2,'icon':image,'speech':speech}, signature='sv')
+    else:
+        data = text
+    if image == False and type(text) == str:
+        del data['icon']
+    if text2 == False and type(text) == str:
+        del data['message']
+    if speech == None and type(text) == str:
+        del data['speech']
+    return data
+        
+def getSingleInfo(item,plugin="UserInfo"):
+    try:
+        return getInfo(plugin)[item.upper()]
+    except:
+        return ""
+    
+def copy(src,dst=""):
+    if type(src) == str and dst != "":
+        if type(dst) == str:
+            if os.path.exists(dst):
+                delete(dst)
+            if os.path.isdir(src):
+                debug("Copying Directory: "+src+" to "+dst)
+                shutil.copytree(src,dst)
+            else:
+                debug("Copying File: "+src+" to "+dst)
+                shutil.copy(src,dst)
+        elif type(dst) == list:
+            for c in dst:
+                copy(src,c)
+    elif type(src) == list and dst == "":
+        for c in src:
+            copy(c[0],c[1])
+    elif type(src) == list and type(dst) == str:
+        for c in src:
+            copy(c,dst)
+def createDirectory(directory):
+    if type(directory) == str:
+        if not os.path.exists(directory):
+            os.makedirs(directory)
+            debug("Creating Directory: "+directory)
+    elif type(directory)==list:
+        for d in directory:
+            createDirectory(d)
+def delete(path):
+    if type(path) == str:
+        if os.path.exists(path):
+            if os.path.isdir(path):
+                debug("Deleting Directory: "+path)
+                shutil.rmtree(path)
+            else:
+                debug("Deleting File: "+path)
+                os.remove(path)
+    elif type(path) == list:
+        for p in path:
+            delete(p)
+   
+def writeSingleInfo(item,new=False,plugin="UserInfo",upper=True,t=True):
+    if upper:
+        item = item.upper()
+    writeInfo({item:new},plugin,upper,t)
+ 
+def writeInfo(new,plugin="UserInfo",upper=True,t=True):
+    if plugin == "UserInfo":
+        path = root+"/UserInfo"
+    else:
+        path = root+"/configs/"+plugin
+    if t:
+        touch(path)
+    oFile = open(path)
+    oData = oFile.read()
+    oFile.close()
+    orig = parseData(oData)
+    data = new
+    for e in orig:
+        if e.upper() not in data:
+            if upper:
+                e = e.upper()
+            data[e] = orig[e]
+    with open(path,'w') as info:
+        info.write("#LiSpeak Config File: "+plugin)
+        for each in data:
+            d = data[each]
+            if upper:
+                each = each.upper()
+            info.write("\n"+str(each)+"="+str(d))
+     
+def autostart(state):
+    if state:
+        touch(home+"/.config/autostart/lispeak.desktop")
+        with open(home+"/.config/autostart/lispeak.desktop","w") as f:
+            f.write("""
+[Desktop Entry]\n
+Version=1.0\n
+Name=LiSpeak\n
+GenericName=LiSpeak\n
+Name[en_CA]=LiSpeak\n
+Comment=LiSpeak is a voice command system\n
+Exec="""+home+"""/LiSpeak/start\n
+Path="""+home+"""/LiSpeak\n
+Terminal=false\n
+Type=Application\n
+Categories=Application;\n""")
+    elif state == False:
+        delete(home+"/.config/autostart/lispeak.desktop")
+        
+def continuous(state):
+    if state:
+        copy(installDir+"/Setup/continue.service",home+"/.lispeak/services/continue.service")
+        writeSingleInfo("continue","True")
+    elif state == False:
+        delete(home+"/.lispeak/services/continue.service")
+        writeSingleInfo("continue","False")
+            
+def sqlCheck(cur):
+    cur.execute("CREATE TABLE IF NOT EXISTS plugins(id INTEGER PRIMARY KEY, name TEXT, identifier TEXT,type TEXT, version TEXT, author TEXT, binFiles TEXT,services TEXT, dicts TEXT, actions TEXT)")
+            
+def getPluginData(path):
+    print "Gathering"
+    if path.endswith('.zip'):
+        zfile = zipfile.ZipFile(path)
+        tar = tarfile.open('tmp.tar.gz', 'w:gz')
+        for name in zfile.namelist():
+            print name
+            (dirname, filename) = os.path.split(name)
+            if "/" not in dirname:
+                dname = dirname
+            zfile.extract(name, installDir)
+            os.chdir(dname)
+            print name.split("/")
+            filea = '/'.join(name.split("/")[1:])
+            if filea != "":
+                tar.add(filea)
+            os.chdir('../')
+        tar.close() 
+        installPlugin("tmp.tar.gz")
+        delete(["tmp.tar.gz",dname])
+        return False
+    dictionaries = []
+    services = []
+    executables = []
+    complete = False
+    config = root + "/config/"
+    if path.endswith('.sp') or path.endswith('.tar.gz'):
+        plugins = {}
+        con = sql.connect(root+"/plugins.db")
+        with con:
+            cur = con.cursor()
+            sqlCheck(cur)
+            cur.execute("SELECT * FROM plugins")
+            pluginList = cur.fetchall()
+            for line in pluginList:
+                print line
+                pid,name,identifier,types,version,author,cmdfile,servicefiles,dictionaries,actions = line
+                plugins[name] = [float(version),eval(cmdfile)]
+        tar = tarfile.open(mode='r:gz',fileobj=file(path))
+        print "Opened"
+        dataf = tar.extractfile('main.info')
+        data = dataf.read()
+        dataf.close()
+        data = parseData(data)
+        print "Data Parsed"
+        data['name'] = data['name'].replace(" ","")  
+    return data
+            
+def installPlugin(path):
+    print "Recieved: "+path
+    data = getPluginData(path)
+    print "Data Gathered"
+    popup = PopUp(data,path)
+    popup.installPlugin = installPluginAction
+    print "Starting"
+    Gtk.main()
+            
+def installPluginAction(path,upgrading=False,parent=None):
+    if path.endswith('.zip'):
+        zfile = zipfile.ZipFile(path)
+        tar = tarfile.open('tmp.tar.gz', 'w:gz')
+        for name in zfile.namelist():
+            print name
+            (dirname, filename) = os.path.split(name)
+            if "/" not in dirname:
+                dname = dirname
+            zfile.extract(name, installDir)
+            os.chdir(dname)
+            print name.split("/")
+            filea = '/'.join(name.split("/")[1:])
+            if filea != "":
+                tar.add(filea)
+            os.chdir('../')
+        tar.close() 
+        installPlugin("tmp.tar.gz")
+        delete(["tmp.tar.gz",dname])
+        return False
+    dictionaries = []
+    services = []
+    executables = []
+    complete = False
+    config = root + "/config/"
+    if path.endswith('.sp') or path.endswith('.tar.gz'):
+        plugins = {}
+        con = sql.connect(root+"/plugins.db")
+        with con:
+            cur = con.cursor()
+            sqlCheck(cur)
+            cur.execute("SELECT * FROM plugins")
+            pluginList = cur.fetchall()
+            for line in pluginList:
+                pid,name,identifier,types,version,author,cmdfile,servicefiles,dictionaries,actions = line
+                plugins[name] = [float(version),eval(cmdfile)]
+        tar = tarfile.open(mode='r:gz',fileobj=file(path))
+        dataf = tar.extractfile('main.info')
+        data = dataf.read()
+        dataf.close()
+        data = parseData(data)
+        data['name'] = data['name'].replace(" ","")     
+        try:
+            currentVersion = plugins[data['name']][0]
+            version = float(data['version'])
+            if currentVersion > version:
+                output("A newer version is already installed")
+            elif currentVersion == version:
+                output("This version is already installed")
+                if dialogPrompt("Reinstall?") == True:
+                    removePlugin(name,True)
+                    installPluginAction(path,parent=parent)
+            else:
+                output("A previous version is already installed")
+                if dialogPrompt("Upgrade?") == True:
+                    removePlugin(name,True)
+                    installPluginAction(path,parent=parent)
+        except:
+            install = False
+            userLang = getSingleInfo("lang")
+            if userLang in data['lang']:
+                output("This plugin is available in %s",True,False,userLang)
+                install = True
+                installLang = userLang
+            else:
+                if len(data['lang']):
+                    output("This plugin is only available in %s",True,False,data['lang'][0])
+                    installLang = data['lang'][0]
+                    install = dialogPrompt("This plugin is only available in %s\nInstall Anyway?","LiSpeak",False,(",".join(data['lang'])))
+                else:
+                    while install == False:
+                        output("This plugin is only available in %s",True,False,data['lang'])
+                        l = raw_input("Which language would you like to install it in?")
+                        if l in data['lang']:
+                            installLang = l
+                            install = True
+            while install == True and complete == False:
+                actions = {}
+                if "depends" in data:
+                    depend = data['depends']
+                    checkDepends(depend)
+                output("Installation is beginning")
+                
+                delete(root+"/"+data['name'])
+                output("Extracting")
+                tar.extractall(root+"/"+data['name'])
+                if "commands" in data['types']:
+                    output("Scanning Files")
+                    try:
+                        new = os.listdir(root+"/"+data['name']+"/bin")
+                        executables = new
+                        createDirectory(root+"/bin")
+                        existing = os.listdir(root+"/bin")
+                        for f in new:
+                            if f in existing:
+                                output("Conflict Found: %s",True,False,f)
+                                install = False
+                        if install == False:
+                            break
+                        output("Moving Executables")
+                        for f in new:
+                            copy(root+"/"+data['name']+"/bin/"+f,root+"/bin/"+f)
+                            os.system("chmod +x \""+root+"/bin/"+f+"\"")
+                    except:
+                        output("No Executable Files")
+                    try:
+                        dictionary = open(root+'/plugins.dic')
+                    except:
+                        touch(root+'/plugins.dic')
+                        dictionary = open(root+'/plugins.dic')
+                    text = dictionary.read()
+                    dictionary.close()
+                    actions = open(root+"/"+data['name']+"/dictionaries/"+installLang)
+                    command = actions.read()
+                    actions.close()
+                    try:
+                        dictionary = open(root+'/plugins.dic','w')
+                        dictionary.write("#PLUGIN: "+data['name']+"\n")
+                        dictionary.write(command)
+                        dictionary.write("#END\n")
+                        dictionary.write(text)
+                    except:
+                        output("Error Installing Plugin In main.dic")
+                    dictionary.close()
+                    try:
+                        createDirectory(root+"/dictionaries")
+                        new = os.listdir(root+"/"+data['name']+"/dictionaries")
+                        for f in new:
+                            if os.path.isdir(root+"/"+data['name']+"/dictionaries/"+f):
+                                try:
+                                    dictionary = open(root+'/dictionaries/'+f+'.dic')
+                                except:
+                                    touch(root+'/dictionaries/'+f+'.dic')
+                                    dictionary = open(root+'/dictionaries/'+f+'.dic')
+                                text = dictionary.read()
+                                dictionary.close()
+                                actions = open(root+"/"+data['name']+"/dictionaries/"+f+"/"+installLang)
+                                command = actions.read()
+                                actions.close()
+                                try:
+                                    dictionary = open(root+'/dictionaries/'+f+'.dic','w')
+                                    dictionary.write("#PLUGIN: "+data['name']+"\n")
+                                    dictionary.write(command)
+                                    dictionary.write("#END\n")
+                                    dictionary.write(text)
+                                except:
+                                    output("Error Installing Plugin In %s.dic",True,False,f)
+                                dictionaries.append(f)
+                    except:
+                        output("Error Scanning Dictionaries")
+                    descfile = open(root+"/"+data['name']+"/languages/"+installLang)
+                    desc = descfile.read()
+                    descfile.close()
+                    desc = desc.split('\n')
+                    actions = {}
+                    for d in desc:
+                        if ":" in d:
+                            n = d.split(":",1)
+                            actions[n[0]] = n[1]
+                if "service" in data['types']:
+                    output("Scanning Files")
+                    new = os.listdir(root+"/"+data['name']+"/services")
+                    services = new
+                    createDirectory(root+"/services")
+                    existing = os.listdir(root+"/services")
+                    for f in new:
+                        if f in existing:
+                            output("Conflict Found: %s",True,False,f)
+                            install = False
+                    if install == False:
+                        break
+                    output("Moving Services")
+                    for f in new:
+                       copy(root+"/"+data['name']+"/services/"+f,root+"/services/"+f+".service")
+                if "mode" in data['types']:
+                    output('Scanning Modes')
+                    createDirectory(root+"/modes")
+                    new = os.listdir(root+"/"+data['name']+"/modes")
+                    for f in new:
+                        if os.path.isdir(root+"/"+data['name']+"/modes/"+f):
+                            try:
+                                dictionary = open(root+'/modes/'+f)
+                            except:
+                                touch(root+'/modes/'+f)
+                                dictionary = open(root+'/modes/'+f)
+                            text = dictionary.read()
+                            dictionary.close()
+                            actions = open(root+"/"+data['name']+"/modes/"+f+"/"+installLang)
+                            command = actions.read()
+                            actions.close()
+                            try:
+                                dictionary = open(root+'/modes/'+f,'w')
+                                dictionary.write("#PLUGIN: "+data['name']+"\n")
+                                dictionary.write(command)
+                                dictionary.write("#END\n")
+                                dictionary.write(text)
+                            except:
+                                output("Error Installing Plugin In %s",True,False,f)
+                createDirectory(root+"/configs/")
+                touch(root+"/configs/"+data['name'])
+                con = sql.connect(root+"/plugins.db")
+                with con:
+                    cur = con.cursor()
+                    sqlCheck(cur)
+                    execline = "INSERT INTO plugins VALUES(NULL, \""+data['name']+"\", \""+str(data['identifier'])+"\", \""+str(data['types'])+"\", \""+str(data['version'])+"\", \""+data['author']+"\", \""+str(executables)+"\", \""+str(services)+"\", \""+str(dictionaries)+"\", \""+str(actions)+"\")"
+                    cur.execute(execline)
+                delete(root+"/"+data['name'])
+                output("Done")
+                complete = True
+                
+            if complete == False:
+                output()
+                output("Installation Cancelled")
+                output()
+            else:
+                output()
+                output("Installation Done!")
+                output()
+def pluginInfo(plugin):
+    con = sql.connect(root+"/plugins.db")
+    with con:
+        cur = con.cursor()
+        sqlCheck(cur)
+        cur.execute("SELECT * FROM plugins WHERE name='" + plugin + "'")
+        pluginList = cur.fetchall()
+        for line in pluginList:
+            pid,name,identifier,types,version,author,cmdfile,servicefiles,dictionaries,actions = line
+            output()
+            output (name)
+            output()
+            output ("Author: %s",True,False,author)
+            output ("Version: %s",True,False,version)
+            output ("Types: %s",True,False,str(types))
+            if "commands" in types:
+                output ("Command(s): %s",True,False,str(cmdfile))
+            if "service" in types:
+                output ("Service(s): %s",True,False,str(servicefiles))
+            output ("Dictionaries: %s",True,False,str(dictionaries))
+            output ("Actions:")
+            actions = eval(actions)
+            for each in actions:
+                output ("\t"+each+"\t\t"+actions[each].replace('\n',''))
+            output ("Commands:")
+            dictionary = open(root+"/plugins.dic")
+            adding = False
+            for line in dictionary:
+                if adding == False:
+                    add = False
+                    if line.startswith('#PLUGIN: '):
+                        if line.replace('#PLUGIN: ','').replace('\n','') == name:
+                            add = False
+                            adding = True
+                else:
+                    add = True
+                    if line == "#END\n":
+                        adding = False
+                        add = False
+                if add == True:
+                        output ("\t"+line.replace('\n',''))
+            dictionary.close()
+def listPlugins():
+    output()
+    con = sql.connect(root+"/plugins.db")
+    with con:
+            cur = con.cursor()
+            sqlCheck(cur)
+            cur.execute("SELECT * FROM plugins")
+            pluginList = cur.fetchall()
+            for line in pluginList:
+                pid,name,identifier,types,version,author,cmdfile,servicefiles,dictionaries,actions = line
+                output(""+name+" v"+version)
+                actions = eval(actions)
+                for each in actions:
+                    output("\t"+each+"\t^"+actions[each].replace('\n','')+"^")
+                output()
+def removePlugin(rname,saveConfig=False):
+    con = sql.connect(root+"/plugins.db")
+    with con:
+        cur = con.cursor()
+        sqlCheck(cur)
+        cur.execute("SELECT * FROM plugins WHERE name='" + rname + "'")
+        pluginList = cur.fetchall()
+        if len(pluginList) == 0:
+            output("Plugin not found.")
+        for line in pluginList:
+            pid,name,identifier,types,version,author,cmdfile,servicefiles,dictionaries,actions = line
+            output("Removing %s",True,False,name)
+            for cmd in eval(cmdfile):
+                output("Removing Executable: %s",True,False,cmd)
+                delete(root+"/bin/"+cmd)
+            for ser in eval(servicefiles):
+                delete(root+"/services/"+ser+".service")
+            if saveConfig == False:
+                output("Removing Config File")
+                delete(root+"/configs/"+name)
+            output("Removing Dictionaries")
+            for dic in eval(dictionaries):
+                dictionary = open(root+'/dictionaries/'+dic+'.dic')
+                text = ""
+                deleting = False
+                for line in dictionary:
+                    if deleting == False:
+                        add = True
+                        if line.startswith('#PLUGIN: '):
+                            if line.replace('#PLUGIN: ','').replace('\n','') == name:
+                                add = False
+                                deleting = True
+                    else:
+                        add = False
+                        if line == "#END\n":
+                            deleting = False
+                    if add == True:
+                        text = text + line
+                dictionary.close()
+                try:
+                    dictionary = open(root+'/dictionaries/'+dic+'.dic','w')
+                    dictionary.write(text)
+                except:
+                    output("Error Cleaning %s.dic",True,False,dic)
+                dictionary.close()
+            dictionary = open(root+'/plugins.dic')
+            text = ""
+            deleting = False
+            for line in dictionary:
+                if deleting == False:
+                    add = True
+                    if line.startswith('#PLUGIN: '):
+                        if line.replace('#PLUGIN: ','').replace('\n','') == name:
+                            add = False
+                            deleting = True
+                else:
+                    add = False
+                    if line == "#END\n":
+                        deleting = False
+                if add == True:
+                    text = text + line
+            dictionary.close()
+            try:
+                dictionary = open(root+'/plugins.dic','w')
+                dictionary.write(text)
+            except:
+                output("Error Cleaning plugins.dic")
+            dictionary.close()
+            cur.execute("DELETE FROM plugins WHERE id = "+str(pid))
+def get_resource_path(rel_path):
+    dir_of_py_file = os.path.dirname(__file__)
+    rel_path_to_resource = os.path.join(dir_of_py_file, rel_path)
+    abs_path_to_resource = os.path.abspath(rel_path_to_resource)
+    return abs_path_to_resource
+    
+quiet = False
+debugMode = False
+if __name__ == "__main__": 
+    installDir = os.path.dirname(os.path.realpath(__file__))
+else:
+    installDir = getInfo()['ROOTDIR']   
+    checkVersion() 
+try:
+    import goslate
+    gt = goslate.Goslate()
+except:
+    copyLibraries()
+    import goslate
+    gt = goslate.Goslate()
+
+if __name__ == "__main__": 
+    from gi.repository import Gtk 
+    parser = argparse.ArgumentParser(description=translate('LiSpeak - Linux Voice Command System'))
+    parser.add_argument("--setup",dest='setup',action='store_true',default=False,help=translate('Setup LiSpeak'))
+    parser.add_argument("--autostart",metavar='state', type=bool,default="",help=translate('Setup LiSpeak'))
+    parser.add_argument('-i', metavar='file', type=str,help=translate('Install a plugin - plugin .sp or .tar.gz file'),default="")
+    parser.add_argument('-r', metavar='plugin', type=str,help=translate('Remove the specified plugin'),default="")
+    parser.add_argument('-p', metavar='name', type=str,help=translate('Install a plugin from the repo'),default="")
+    parser.add_argument('-d', metavar='plugin', type=str,help=translate('Display info on a plugin'),default="")
+    parser.add_argument('-l', dest='listPlugins', action='store_true',default=False,help=translate('List the installed plugins'))
+    parser.add_argument('-f', dest='force', action='store_true',default=False,help=translate('Force installation with no confirmation.'))
+    parser.add_argument("-q",dest='quiet',action='store_true',default=False,help=translate('Run the program with no output'))
+    parser.add_argument("--oswarn",dest='warn',action='store_true',default=False,help=translate('Warn the user if their operating system is not supported'))
+    parser.add_argument("--ask",dest='ask',action='store_true',default=False,help=translate('Ask the user to re-enter their info'))
+    parser.add_argument("--debug",dest='debug',action='store_true',default=False,help=translate('Debug the program'))
+    args = parser.parse_args()
+    quiet = args.quiet
+    debugMode = args.debug
+    force = args.force
+    debug(args)
+    something_done = False
+    if args.setup:
+        something_done = True
+        setup()
+    else:
+        checkVersion()
+    if args.warn:
+        something_done = True
+        displayOSWarning()
+    if args.ask:
+        something_done = True
+        askInfo()
+    if args.r != "":
+        something_done = True
+        removePlugin(args.r)
+    if args.i != "":
+        something_done = True
+        installPlugin(args.i)
+    if args.p != "":
+        something_done = True
+        downloadPackage(args.p)
+    if args.listPlugins:
+        something_done = True
+        listPlugins()
+    if args.d != "":
+        something_done = True
+        pluginInfo(args.p)
+    if args.autostart != "":
+        something_done = True
+        autostart(args.autostart)
+    if not something_done and not quiet:
+        os.system("./lispeak --help");
+else:
+    quiet = True
+    debugMode = True
+    force = True

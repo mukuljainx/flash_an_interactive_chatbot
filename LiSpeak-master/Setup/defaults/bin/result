@@ -1,0 +1,7 @@
+#!/usr/bin/env python2.7
+
+import lispeak,sys
+if "--translate" in sys.argv:
+    sys.argv[1] = lispeak.translate(sys.argv[1])
+    sys.argv[2] = lispeak.translate(sys.argv[2])
+lispeak.displayNotification({'title':sys.argv[1],'message':sys.argv[2]})

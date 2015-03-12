@@ -1,0 +1,38 @@
+#!/usr/bin/env python2.7
+from sys import argv
+
+args = argv
+args.pop(0)
+import dbus
+bus = dbus.SessionBus()
+power = bus.get_object('org.gnome.SettingsDaemon.Power',
+                       '/org/gnome/SettingsDaemon/Power')
+iface = dbus.Interface(power, 'org.gnome.SettingsDaemon.Power.Screen')
+
+# Hibernate the system
+if args[0] == "get":
+	print iface.GetPercentage()
+elif args[0] == 'set':
+    try:
+	    iface.SetPercentage(int(args[1]))
+    except: 
+        if args[1] == "full":
+            iface.SetPercentage(100)
+        elif args[1] == "half":
+            iface.SetPercentage(50)
+        elif args[1] == "low":
+            iface.SetPercentage(5)
+        elif args[1] == "higher":
+            cur = iface.GetPercentage()
+            if cur + 20 > 100:
+                new = 100
+            else:
+                new = cur + 20
+            iface.SetPercentage(new)
+        elif args[1] == "lower":
+            cur = iface.GetPercentage()
+            if cur - 20 < 0:
+                new = 5
+            else:
+                new = cur - 20
+            iface.SetPercentage(new)

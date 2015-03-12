@@ -1,0 +1,25 @@
+#!/usr/bin/env python2.7
+import sys
+import urllib2
+import json
+#import lispeak
+try:
+    filename = sys.argv[1]
+except IndexError:
+    print 'Usage: transcribe.py <file>'
+    sys.exit(1)
+
+f = open(filename)
+data = f.read()
+f.close()
+
+req = urllib2.Request("https://www.google.com/speech-api/v2/recognize?lang=en_US&client=chromium&key=AIzaSyBOti4mM-6x9WDnZIjIeyEU21OpBXqWBgw", data=data, headers={'Content-type': 'audio/x-flac; rate=16000'})
+
+try:
+    ret = urllib2.urlopen(req)
+except urllib2.URLError:
+    print "Error Transcribing Voicemail"
+    sys.exit(1)
+ret.readline()
+text = json.loads(ret.readline())
+print text['result'][0]['alternative'][0]['transcript']

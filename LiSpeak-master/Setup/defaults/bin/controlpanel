@@ -1,0 +1,115 @@
+#!/bin/bash
+
+if [ \! -z "$(which gnome-control-center)" ] ;
+then
+
+#echo This should be Gnome DE
+
+case "$1" in
+general)
+    gnome-control-center;;
+mouse)
+    gnome-control-center mouse;;
+keyboard)
+    gnome-control-center keyboard;;
+bluetooth)
+    gnome-control-center bluetooth;;
+network)
+    gnome-control-center network;;
+display)
+    gnome-control-center display;;
+screen)
+    gnome-control-center screen;;
+sound)
+    gnome-control-center sound-nua;;
+appearance)
+    gnome-control-center unity-appearance;;
+accounts)
+    gnome-control-center credentials;;
+security)
+    gnome-control-center activity-log-manager;;
+power)
+    gnome-control-center power;;
+power-stat)
+    gnome-power-statistics;;
+esac
+
+exit
+fi
+
+if [ \! -z "$(which cinnamon-control-center)" ] ;
+then
+
+#echo This is Linux Mint with Cinnamom DE
+#not sure of modules name
+
+case "$1" in
+general)
+    cinnamon-control-center;;
+mouse)
+    cinnamon-control-center mouse;;
+keyboard)
+    cinnamon-control-center keyboard;;
+bluetooth)
+    cinnamon-control-center bluetooth;;
+network)
+    cinnamon-control-center network;;
+display)
+    cinnamon-control-center display;;
+screen)
+    cinnamon-control-center screen;;
+sound)
+    cinnamon-control-center sound-nua;;
+appearance)
+    cinnamon-control-center unity-appearance;;
+accounts)
+    cinnamon-control-center credentials;;
+security)
+    cinnamon-control-center activity-log-manager;;
+power)
+    cinnamon-control-center power;;
+power-stat)
+    cinnamon-power-statistics;;
+esac
+
+exit
+fi
+
+if [ \! -z "$(which kcmshell4)" ] ;
+then
+
+#echo This should be KDE4
+
+case "$1" in
+general)
+    system-settings;;
+mouse)
+    kcmshell4 mouse;;
+keyboard)
+    kcmshell4 keyboard;;
+bluetooth)
+    kcmshell4 bluetooth;;
+network)
+    kcmshell4 network;;
+display)
+    kcmshell4 display;;
+screen)
+    kcmshell4 screen;;
+sound)
+    kcmshell4 sound-nua;;
+appearance)
+    kcmshell4 appearance;;
+accounts)
+    kcmshell4 credentials;;
+security)
+    kcmshell4 activity-log-manager;;
+power)
+    kcmshell4 power;;
+power-stat)
+    kcmshell4 power-statistics;;
+esac
+
+exit
+fi 
+
+

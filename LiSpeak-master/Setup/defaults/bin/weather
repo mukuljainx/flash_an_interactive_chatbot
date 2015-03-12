@@ -1,0 +1,49 @@
+#!/usr/bin/env python2.7
+
+import urllib,urllib2,sys,time,lispeak
+from HTMLParser import HTMLParser
+
+class MyHTMLParser(HTMLParser):
+    def handle_starttag(self, tag, attrs):
+        if len(attrs) > 0:
+            self.data[tag] = {}
+            for a in attrs:
+                self.data[tag][a[0]] = a[1]
+    
+class IPPageParser(HTMLParser):
+    def handle_data(self, data):
+        if data == "City":
+            print "Recording"
+            self.record = True
+    def handle_starttag(self, tag, attrs):
+        if self.record and tag == 'input':
+            for attr in attrs:
+                if attr[0] == 'value':
+                    self.city = attr[1]
+            self.record = False
+            
+info = lispeak.getInfo()
+if info['PROXY'] == "True":
+    proxies = {'http': 'http://'+info['PROXYHOST']+":"+info['PROXYPORT']}
+    f = urllib.urlopen("http://www.geobytes.com/IpLocator.htm",proxies=proxies)
+else:
+    f = urllib.urlopen("http://www.geobytes.com/IpLocator.htm")
+
+parser = IPPageParser()
+parser.record = False
+parser.feed(f.read())
+city = parser.city.replace(" ","%20")
+
+print "CITY:",city
+
+response = urllib2.urlopen('http://api.openweathermap.org/data/2.5/weather?q='+city+'&mode=xml&units=metric')
+parser = MyHTMLParser()
+parser.data = {}
+parser.feed(response.read())
+d = parser.data
+
+title = "It is "+str(round(float(d['temperature']['value']),1))+" degrees in "+d['city']['name']
+message = "The wind is "+d['direction']['name']+" at "+str(d['speed']['value'])+" ("+d['speed']['name']+")\\nHumidity: "+d['humidity']['value']+d['humidity']['unit']+"\\nClouds: "+d['clouds']['name']+" ("+d['clouds']['value']+")\\nSunrise: "+d['sun']['rise'].split("T")[1]+"\\nSunset: "+d['sun']['set'].split("T")[1]+"\\nPressure: "+d['pressure']['value']+" "+d['pressure']['unit']     
+
+lispeak.displayNotification({'title':title,'message':message,'icon':'http://openweathermap.org/img/w/'+d['weather']['icon']+".png"})
+

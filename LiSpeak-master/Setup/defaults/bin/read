@@ -1,0 +1,17 @@
+#!/usr/bin/env python2.7
+
+import lispeak,os,time
+from gi.repository import Gtk, Gdk
+from gi.repository import Gtk as gtk
+
+clipboard = Gtk.Clipboard.get(Gdk.SELECTION_CLIPBOARD)
+orig = clipboard.wait_for_text()
+
+os.system("xte \"keydown Control_L\" \"key c\" \"keyup Control_L\"")
+
+time.sleep(0.5)
+text = clipboard.wait_for_text()
+clipboard.set_text(orig,-1)
+clipboard.store()
+
+lispeak.speak(text)

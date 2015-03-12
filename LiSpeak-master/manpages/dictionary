@@ -1,0 +1,91 @@
+.\" Manpage for dictionary.
+.\" Contact Luca Vercelli <luca.vercelli.to@gmail.com> to correct errors or typos.
+.TH man 8 "13 April 2014" "1.0" "dictionary man page"
+.SH NAME
+dictionary \- recognize a pattern against a dictionary
+.SH SYNOPSIS
+dictionary [-h] <input text> <dictionaryfile> [-f][-s startingline]
+.SH DESCRIPTION
+dictionary takes as input a text (probably a sentence), then try to match it against the given dictionary (.dic) file.
+On success, the program echoes the text (probably a command) associated with the pattern.
+ 
+The dic file must respect a precise syntax.
+Each entry is developed over two lines.
+The first line is the pattern to be recognized, the second line is the corresponding command for output.
+The first line can contain the following wildchards:
+
+ \fB[\fRtext\fB]\fR
+.RS 4
+text is optional. Input text may contain it or not.
+.RE
+ \fB<\fRtext1\fB,\fRtext2\fB>\fR
+.RS 4
+Input text must contain one, and only one, among text1 and text2.
+An arbitrary nuber of text1,text2,text3,... is allowed.
+.RE
+ \fB(WORD \fRname\fB)\fR
+.RS 4
+Input text must contain a single word. This word will be referenced as \fB$name$\fR
+in the second line of entry.
+.RE
+ \fB(WORD<\fRany pattern\fB> \fRname\fB)\fR
+.RS 4
+Input text must contain an expression that match the mattern; all the expression will be included in \fB$name$\fR.
+.RE
+ \fB(LINE \fRname\fB)\fR
+.RS 4
+All the remaining portion of the sentence. Such text will be referenced as \fB$name$\fR
+in the second line of entry.
+.RE
+ \fB{filename}\fR
+.RS 4
+This will match the string against the other dictionary filename, using option -f.
+Experimental feature.
+.RE
+
+Wildchards can be nested.
+
+The second line of the entry \fBmust\fR begin with a space or a tab. It can contain internal variables, denoted as \fB$variablename$\fR.
+Internal variables will be replaced before echoing output.
+If you want output the $ sign, for example for using a SHELL variable, type \\$.
+A special variable \fB$SPEECH$\fR is provided for whole speech.
+
+Between one entry and the following one, any number of empty lines is allowed.
+Line beginning with a sharp are allowed, too, and will be ignored as comments.
+Empty lines and comment lines are \fBnot\fR allowed between the two lines of an entry.
+
+.SH OPTIONS
+ \fB-h\fR
+.RS 4
+Show help
+.RE
+ \fB-f\fR
+.RS 4
+Allow matching of just first portion of speech.
+.RE
+ \fB-s\fR startingline
+.RS 4
+If a startingline is given, the search will begin from this line of the dic file. Program output will change:
+two lines will be echoed, the command and the number of line of the match.
+The intended use of this option is for looping over all the possible matches.
+.RE
+.SH EXAMPLES
+The following two lines are acceptable for a dictionary entry:
+
+[<tell[ ][me],say>] goodbye (LINE somemore)
+  echo "goodbye $somemore$"
+
+and a it could lead to the following recognition:
+
+.RS 4
+dictionary "tellme goodbye stupid" ./filename.dic
+
+goodby stupid
+.RE
+
+.SH SEE ALSO
+lispeak
+.SH BUGS
+No known bugs.
+.SH AUTHOR
+JamezQ et al.

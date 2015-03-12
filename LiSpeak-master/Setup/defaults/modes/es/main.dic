@@ -1,0 +1,92 @@
+<hablar,di,decir,repite> (LINE words)
+  say "$words$"
+<escribir,escribe,teclear,teclea,escribeme> (LINE words)
+  type "$words$\\r"
+deshacer
+  xType "keydown Control_L" "key z" "keyup Control_L"
+rehacer
+  xType "keydown Shift_L" "keydown Control_L" "key z" "keyup Shift_L" "keyup Control_L"
+cortar
+  xType "keydown Control_L" "key x" "keyup Control_L"
+pegar[ texto]
+  xType "keydown Control_L" "key v" "keyup Control_L"
+copiar[ texto]
+  xType "keydown Control_L" "key c" "keyup Control_L"
+seleccionar todo[ text]
+  xType "keydown Control_L" "key a" "keyup Control_L"
+
+ir a[la][pagina][web] (LINE site)
+  goto "$site$"
+  
+leer[ este][ texto]
+  read
+  
+bloquear[ computadora,sesion]
+  result_from_call "gnome-screensaver-command -l" "false"
+  
+<abrir,mostrar,ver,muestrame,abreme> [mis][la][carpeta][de]<documentos>
+  open "xdg-open `xdg-user-dir DOCUMENTS`"
+<abrir,mostrar,ver,muestrame,abreme> [mi][la]carpeta][de]<musica,canciones,sonidos>
+  open "xdg-open `xdg-user-dir MUSIC`"
+<abrir,mostrar,ver,muestrame,abreme> [mi,mis][la][carpeta]<home,carpeta personal,archivos>
+  open "xdg-open `xdg-user-dir`"
+<abrir,mostrar,ver,muestrame,abreme> [mis][la][carpeta][de]<videos>
+  open "xdg-open `xdg-user-dir VIDEOS`"
+<abrir,mostrar,ver,muestrame,abreme> [mis][la][carpeta][de]<imagenes>
+  open "xdg-open `xdg-user-dir PICTURES`"
+<abrir,mostrar,ver,muestrame,abreme> [mis][[la][carpeta][de]<descargas>
+  open "xdg-open `xdg-user-dir DOWNLOAD`"
+
+<buscar,google,buscar [en][google],busqueda web,buscame[en][google]> (LINE question)
+  goto "http://www.google.com/search?q=$question$"
+[buscar en]<wolfram,wolf RAM>[ alpha] (LINE question)
+  goto "www.wolframalpha.com/input/?i=$question$"
+<youtube,buscar en youtube,ver en youtube,buscame en youtube> (LINE video)
+  goto "https://www.youtube.com/results?search_query=$video$"
+
+<donde es,mostrar direccion,buscame la direccion>[en el mapa] (LINE place)
+  goto "https://maps.google.com/maps?q=$place$&hl=\$LANG"
+  
+<abrir,ejecutar> [google]chrome
+  open "google-chrome"
+  
+<abrir,ejecutar> <[mozila] firefox,internet,el navegador>
+  open "firefox"
+
+<abrir,ejecutar> <word,excel,openoffice,libreoffice,liber office>
+  open "libreoffice"
+
+
+<abrir,ejecutar> blender
+  open "blender"
+
+<abrir,ejecutar> (WORD app)
+  open "$app$"
+
+fecha
+  date date
+
+[que,en que,mostrar la]<[dia,fecha]>[es][de][hoy][estamos]
+  date date
+[que,cual es la]<hora>[es,actual][alctualmente]
+  date time
+  
+[mostrar,ver,cual es][el]<clima>[actual]
+  weather
+
+[cual es][mi,la]<direccion ip>
+  UserInformation ip
+[Cual es][mi]<nombre>
+  UserInformation name
+
+#MEDIA MISSING MOST COMMANDS  
+juego (LINE extra)
+  media play
+deténgase (LINE extra)
+  media stop
+
+<iniciar,entrar,comenzar>[el] <modo [de] dictado>
+    mode dictation
+  
+(LINE word)
+  wolf "$word$"

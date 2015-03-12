@@ -1,0 +1,21 @@
+#!/usr/bin/env python2.7
+
+import sys,os
+
+args = sys.argv[1:]
+print args
+
+actions = []
+
+newAct = ""
+
+for e in args:
+    if e.endswith("\""):
+        newAct += e.replace("\"","") + " "
+        actions.append(newAct.strip())
+        newAct = ""
+    else:
+        newAct += e.replace("\"","") + " "
+del newAct      
+for e in actions:
+    os.system("xte \""+e+"\"")

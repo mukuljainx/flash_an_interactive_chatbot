@@ -1,0 +1,57 @@
+#!/bin/bash
+#
+# Usage: pycmd <mode>
+# Run notify, indicator_server, all services, if needed. Then ask them to change mode to <mode>.
+#
+# right now it uses moving of files, but we may want to communicate with the
+# python script another way.
+
+
+function error() {
+    echo "Accepted modes:"
+    echo "wait"
+    echo "done"
+    echo "stop"
+    echo "record"
+    echo "result"
+    exit -1
+}
+
+SIG_WAIT=1
+SIG_DONE=2
+SIG_STOP=3
+SIG_RECORD=4
+SIG_RESULT=5
+
+FILEFOLDER=/tmp/lispeak_$(id -un)
+mkdir -p $FILEFOLDER
+
+if [ -z "$1" ];then
+    error
+fi
+
+shopt -s nullglob
+
+case "$1" in
+    wait)
+	SIGNAL=$SIG_WAIT
+	;;
+    done)
+	SIGNAL=$SIG_DONE
+	;;
+    stop)
+	SIGNAL=$SIG_STOP
+	;;
+    record)
+	SIGNAL=$SIG_RECORD
+	;;
+    result)
+	SIGNAL=$SIG_RESULT
+	;;
+    *)
+	error
+	;;
+esac
+
+dbus-send --session /com/bmandesigns/lispeak/$SIGNAL com.bmandesigns.lispeak.AppStatus
+

@@ -1,0 +1,20 @@
+For this Projects these tools are used 
+1.Pyaiml
+2.Lispeak
+3.espeak
+
+aiml files are taken from alicebot site
+
+for python writting these links were used
+
+1. to produce time delay - http://stackoverflow.com/questions/510348/how-can-i-make-a-time-delay-in-python
+
+2. To read and write data - https://docs.python.org/2/tutorial/inputoutput.html
+
+3.to change directory - http://stackoverflow.com/questions/431684/how-do-i-cd-in-python
+
+4.To run lispeak - http://stackoverflow.com/questions/13745648/running-bash-script-from-within-python
+
+5.Basic python - http://www.tutorialspoint.com/python/python_break_statement.htm
+
+6.

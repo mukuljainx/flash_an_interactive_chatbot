@@ -1,0 +1,16 @@
+#!/bin/bash
+
+cd ${0%/*}
+
+FILEFOLDER=/tmp/lispeak_$(id -un)
+
+shopt -s nullglob
+for f in $FILEFOLDER/*.pid
+do
+    echo $f
+    base=$(basename $f)
+	read PID < $f
+	kill $PID 2&>/dev/null
+	rm -f $f
+done
+

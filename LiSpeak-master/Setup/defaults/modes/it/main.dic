@@ -1,0 +1,95 @@
+<dì,di',dimmi> (LINE words)
+  say "$words$"
+<scrivi> (LINE words)
+  type "$words$\\r"
+annulla
+  xType "keydown Control_L" "key z" "keyup Control_L"
+rifai
+  xType "keydown Shift_L" "keydown Control_L" "key z" "keyup Shift_L" "keyup Control_L"
+taglia
+  xType "keydown Control_L" "key x" "keyup Control_L"
+incolla[ [il ]testo]
+  xType "keydown Control_L" "key v" "keyup Control_L"
+copia[<[ il] testo],[ la] selezione>]
+  xType "keydown Control_L" "key c" "keyup Control_L"
+seleziona tutto[[ il] testo]
+  xType "keydown Control_L" "key a" "keyup Control_L"
+
+vai [a ](LINE site)
+  goto "$site$"
+  
+leggi[ questo][ testo]
+  read
+  
+blocca[[ il] computer]
+  result_from_call "gnome-screensaver-command -l" "false"
+  
+<apri,mostra,visualizza><[ i][ miei] <documenti,files>, la cartella [dei [miei ]]documenti>
+  open "xdg-open `xdg-user-dir DOCUMENTS`"
+<apri,mostra,visualizza><[ la][ mia] musica,[ i][ miei] <file,files> musicali,[ la] cartella <[della ][mia ]musica,[dei ][miei ]<file,files> musicali>>
+  open "xdg-open `xdg-user-dir MUSIC`"
+<apri,mostra,visualizza><[ la][ mia][ cartella] home>
+  open "xdg-open `xdg-user-dir`"
+<apri,mostra,visualizza><[ i][ miei] video,[ i][ miei] <file,files> video,[ la] cartella <[dei ][miei ]video,[dei ][miei ]<file,files> video>>
+  open "xdg-open `xdg-user-dir VIDEOS`"
+<apri,mostra,visualizza><[ le][ mie] immagini,[i ][miei ]<file,files> immagine>, la cartella <[delle ][mie ]immagini,[dei ][miei ]<file,files> immagine>>
+  open "xdg-open `xdg-user-dir PICTURES`"
+<apri,mostra,visualizza><[[ la][ mia] cartella dei[ miei]],[ i][ miei]> download
+  open "xdg-open `xdg-user-dir DOWNLOAD`"
+
+<cerca,google,cerca su google> (LINE question)
+  goto "http://www.google.com/search?q=$question$"
+[cerca su]<wolfram,wolf ram>[ alpha] (LINE question)
+  goto "www.wolframalpha.com/input/?i=$question$"
+[cerca su ]youtube (LINE video)
+  goto "https://www.youtube.com/results?search_query=$video$"
+  
+<dove è,dov'è,dove si trova,dove sta> (LINE place)
+  goto "https://maps.google.com/maps?q=$place$&hl=\$LANG"
+  
+<apri,lancia> [<il programma,l'applicazione> ](WORD app)
+  program "$app$"
+
+data
+  date date
+ora
+  date time
+[<dimmi,mostra,scrivi >]<che giorno è,che data è>[ <adesso,oggi, in questo momento>]
+  date date
+[<dimmi,mostra,scrivi >]<che ora è,che ore sono>[ <adesso,oggi, in questo momento>]
+  date time
+  
+[<mostra,dimmi> ][<che tempo [che ]fa,come è il tempo, qual è il tempo,come fa>][ <oggi,adesso,ora>]
+  weather
+
+[dimmi ]<quale è, qual è> il mio ip
+  UserInformation ip
+[dimmi ]<come mi chiamo,qual è il mio nome>
+  UserInformation name
+
+[<canzone,fai partire,ascolta,metti>][ <[il ]brano,[la ]canzone>] (LINE song)
+  media "$song$"
+abbassa [il ]volume
+  media volume_down
+alza [il ]volume
+  media volume_up
+<ferma,stop>[ <[il ]brano,[la ]canzone>]
+  media stop
+<silenzioso, muto>
+  media volume_mute
+pausa
+  media pause
+<play, esegui>[ <[il ]brano,[la ]traccia,[la ]canzone,[il ]video>]
+  media play
+[<canzone, brano, traccia, file, video> ]precedente
+  media prev
+<[<canzone, traccia> ]successiva,[<file,video,brano> ]successivo>
+  media next
+<qual, quale, che>[
+
+[<inizia,avvia,attiva> ]<[il ]modo,[la ]modalità> dettato
+    mode dictation
+  
+(LINE word)
+  wolf "$word$"
+ 

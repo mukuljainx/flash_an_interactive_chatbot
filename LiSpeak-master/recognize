@@ -1,0 +1,236 @@
+#!/bin/bash
+
+   # This program is free software: you can redistribute it and/or modify
+   #  it under the terms of the GNU General Public License as published by
+   #  the Free Software Foundation, either version 3 of the License, or
+   #  (at your option) any later version.
+
+   #  This program is distributed in the hope that it will be useful,
+   #  but WITHOUT ANY WARRANTY; without even the implied warranty of
+   #  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   #  GNU General Public License for more details.
+
+   #  You should have received a copy of the GNU General Public License
+   #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+#
+# Usage: recognize [--dontexec] "Text to be recognized" [ file.dic ]
+#
+
+if [ "$1" = "--dontexec" ] ;
+then
+  DONTEXEC=1
+  shift
+else
+  DONTEXEC=0
+fi
+
+if [ -z "$1" ] ;
+then
+  echo "Empty speech."
+  exit -1
+else
+  SPEECH=$1
+fi
+
+if [ -z "$2" ]
+  then
+    dicmode="reg"
+  else
+    dicmode="$2"
+    
+fi
+echo "DICMODE=$dicmode"
+
+cd ${0%/*}
+
+USER_DIR=$HOME/.lispeak
+rm $HOME/.lispeak/bin/lispeak.py
+rm $HOME/.lispeak/services/lispeak.py
+
+cp "./lispeak" "$HOME/.lispeak/bin/lispeak.py"
+cp "./lispeak" "$HOME/.lispeak/services/lispeak.py"
+cp "./lispeak" "./Recognition/bin/lispeak.py"
+cp "./lispeak" "./Microphone/lispeak.py"
+
+cp "./Setup/libraries/goslate.py" "$HOME/.lispeak/bin/"
+cp "./Setup/libraries/goslate.py" "$HOME/.lispeak/services/"
+cp "./Setup/libraries/goslate.py" "./Microphone/"
+cp "./Setup/libraries/goslate.py" "./Recognition/bin/"
+
+while read line           
+do
+  if [ ! "${line:0:1}" = "#" ];then
+	export "$line"
+  fi
+done <$USER_DIR/UserInfo
+
+
+#transform $SPEECH into some standard form
+#i.e. everything lowercase, and it does not contain "
+function escape_speech() {
+SPEECH=$(echo "$SPEECH" |sed -e "s/\"//")
+SPEECH=$(eval "echo \"$SPEECH\" | tr '[:upper:]' '[:lower:]'")
+}
+
+
+# Try to run a command in ./Recognition/bin with useful errors.
+# This routine assumes $2 is not empty
+function run_command() {
+
+    eval "./Recognition/recognized.py \"$1\" \"$2\""
+
+    echo "Executing: $2"
+    
+    eval "./Recognition/bin/$2"
+
+    if [ $? != 0 ];then
+       eval "~/.lispeak/bin/$2"
+    fi
+
+    if [ $? != 0 ];then
+	./Recognition/bin/result "Error" "There was an error while running: $1" --translate
+	exit 1
+    fi
+    
+}
+
+#convert speech $SPEECH into command $COMMAND
+function speech2command() {
+
+cd $ROOTDIR
+
+if [ "$dicmode" = "reg" ]; then
+
+    read mode < "$USER_DIR/MODE"
+
+    if [ -z "$mode" ]; then
+        mode="main"
+    fi
+
+    echo "MODE IS: $mode"
+
+    if [ $mode = "main" ]; then
+
+        # Use sed scripts here.
+        if [ -z "$SPEECH" ];then
+            echo "Speech unable to be transcribed."
+            ./Recognition/bin/result Error "Speech unable to be transcribed" --translate
+            exit 1
+        fi
+
+        rm Microphone/result 2>/dev/null
+
+
+        if [ -e "$USER_DIR/personal.dic" ];then
+            COMMAND=$(./Recognition/dictionary "$SPEECH" "$USER_DIR/personal.dic")
+
+            EXIT=$?
+            if [ "$EXIT" == 0 ];then
+	        return
+            fi
+            if [ "$EXIT" != 2 ];then
+	        echo "There is an error in $USER_DIR/personal.dic"
+            fi
+        fi
+
+        process=$(ps -p `xdotool getwindowfocus getwindowpid` -o comm= |tr -d '\n')
+        echo ${process}
+        if [ -e "$USER_DIR/dictionaries/${process}.dic" ];then
+            COMMAND=$(./Recognition/dictionary "$SPEECH" "$USER_DIR/dictionaries/${process}.dic")
+
+            EXIT=$?
+            if [ "$EXIT" == 0 ];then
+	        return
+            fi
+            if [ "$EXIT" != 2 ];then
+	        echo "There is an error in $USER_DIR/dictionaries/${process}.dic"
+            fi
+        fi
+
+        if [ -e "$USER_DIR/plugins.dic" ];then
+            COMMAND=$(./Recognition/dictionary "$SPEECH" "$USER_DIR/plugins.dic")
+
+            EXIT=$?
+            if [ "$EXIT" == 0 ];then
+	        return
+            fi
+            if [ "$EXIT" != 2 ];then
+	        echo "There is an error in $USER_DIR/plugins.dic"
+            fi
+        fi
+
+        if [ ! -e "$USER_DIR/modes/main.dic" ];then
+           echo "Installation error: main.dic not found"
+           exit 5
+        fi
+        
+        COMMAND=$(./Recognition/dictionary "$SPEECH" "$USER_DIR/modes/main.dic")
+
+        EXIT=$?
+
+        if [ "$EXIT" == 0 ];then
+            if [ ! -z "$COMMAND" ];then
+                return
+            else
+                exit 7
+            fi
+        elif [ "$EXIT" == 2 ];then
+            ./Recognition/bin/result Error "'$SPEECH' is not a recognized command" --translate
+
+        else 
+            echo "There is an error in ${mode}.dic"
+            ./Recognition/bin/result Error "There was an error while reading main.dic" --translate
+        fi
+    else
+
+        COMMAND=$(./Recognition/dictionary "$SPEECH" "$USER_DIR/modes/$mode.dic")
+
+        EXIT=$?
+
+        if [ "$EXIT" == 0 ];then
+            return
+        elif [ "$EXIT" == 2 ];then
+            ./Recognition/bin/result Error "'$SPEECH' is not a recognized command" --translate
+
+        else 
+            echo "There is an error in ${mode}.dic"
+            ./Recognition/bin/result Error "There was an error while reading $mode" --translate
+        fi
+    fi
+else
+    COMMAND=$(./Recognition/dictionary "$SPEECH" "$USER_DIR/modes/$dicmode.dic")
+    
+    EXIT=$?
+    if [ "$EXIT" == 0 ];then
+        return
+    elif [ "$EXIT" == 2 ];then
+        ./Recognition/bin/result Error "'$SPEECH' is not a recognized command" --translate
+    else 
+        echo "There is an error in ${mode}.dic"
+        ./Recognition/bin/result Error "There was an error while reading $mode" --translate
+    fi
+fi
+
+} # speech2command
+
+escape_speech
+
+echo $SPEECH
+
+speech2command
+
+
+echo "THE COMMAND: $COMMAND"
+
+if [ \! -z "$COMMAND"  ] ;
+then
+  if [ $DONTEXEC -eq 0 ] ;
+  then
+    run_command "$SPEECH" "$COMMAND"
+  else
+    echo "$COMMAND"
+  fi
+fi
+
+

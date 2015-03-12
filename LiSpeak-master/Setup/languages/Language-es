@@ -1,0 +1,36 @@
+#LiSpeak Config File: Language-es
+=
+Installation Done!=Se ha completado la instalación!!!
+Please wait=Espere por favor
+First Name=Nombre
+Error Scanning Dictionaries=Error al escanear el diccionario
+LinuxMint is NOT a supported operating system_NL_LiSpeak may not work properly=LinuxMint no es un sistema compatible, LiSpeak no funciona correctamente =(
+LiSpeak=LiSpeak
+Speech unable to be transcribed _NL_=No le he entendido
+Remove the specified plugin=Por favor,desactive el plugin señalado.
+Run the program with no output=El programa corre sin anunciarse.
+Listening=Le escucho.
+Installation is beginning=La instalación está iniciando.
+Warn the user if their operating system is not supported=El sistema no es compatible.
+Ask the user to re-enter their info=¿Podría reingresar su información?
+Install a plugin - plugin .sp or .tar.gz file=Instalar un plugin -. Plug-sp o tar.gz
+Install a plugin from the repo=Instalar un plugin desde el repositorio.
+Performing recognition=Reconocimiento en curso...
+No Executable Files=Archivo no ejecutable...
+Moving Executables=Moviendo ejecutable...
+Welcome to LiSpeak v1.1=Bienvenido a LiSpeak v1.1
+This plugin is only available in en _NL_ Install Anyway?=Este plugin sólo está disponible en inglés, desea instalarlo?
+Extracting=Extrayendo...
+Wolfram Alpha Key=Tecla para Wolfram Alfa
+List the installed plugins=Lista de plugins instalados...
+This plugin is only available in en=Este plugin sólo esta disponible en inglés.
+Last Name=Apellido
+Scanning Files=Analizando archivos...
+LiSpeak Installation=Instalación de LiSpeak
+Display info on a plugin=Información del plugin.
+Setup LiSpeak=Configura LiSpeak.
+LiSpeak Ready=LiSpeak esta listo para escucharle!
+Continue=Continuar?
+Done=Hecho!
+Force installation with no confirmation.=Forzar la instalación sin confirmación.
+Debug the program=Depurar el programa

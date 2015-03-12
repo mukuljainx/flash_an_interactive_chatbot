@@ -1,0 +1,24 @@
+#!/usr/bin/env python2.7
+# This module can accept many arguments. If the "" syntax is used, then the argument will be recognised as one,
+# else if no "" syntax is used, then the arguments will be recognised as different.
+# I did this to keep a steady syntax across all dictionaries
+
+import sys,lispeak
+import subprocess
+
+args = sys.argv
+
+if args.__len__() < 2:
+    print("ERROR: Not enough arguments provided to result_from_call")
+    exit(1)
+
+args.pop(0)  # Remove script name
+
+args2 = args[0].split()
+p = subprocess.Popen(args2, stdout=subprocess.PIPE)
+out, err = p.communicate()  # Store all output in to result file
+try:
+    if args[-1].lower() != "false":
+        lispeak.displayNotification(" ".join(args),out)
+except:
+    lispeak.displayNotification(" ".join(args),out)

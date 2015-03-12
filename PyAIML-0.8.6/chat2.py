@@ -1,0 +1,8 @@
+import aiml
+k = aiml.Kernel()
+k.learn("speech.aiml")
+
+while True:
+	rec = raw_input('You :')
+	reply = k.respond(rec)
+	print 'Flash :', reply

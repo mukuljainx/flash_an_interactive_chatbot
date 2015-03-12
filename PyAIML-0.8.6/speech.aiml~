@@ -1,0 +1,517 @@
+<?xml version="1.0" encoding="ISO-8859-15"?>
+
+
+
+
+
+<aiml>
+<!--author: Atul-->
+<!--licence: Standard-->
+<!--created with: GaitoBot AIML Editor V2.4.0.156-->
+<category>
+        <pattern>HI</pattern>
+        <template>
+                <random>
+                        <li>1.hello</li>
+                        <li>2.Howdi</li>
+                        <li>3.hey</li>
+                        <li>4.hi</li>
+                       
+                </random></template>
+</category>
+<category>
+        <pattern>HI *</pattern>
+        <template><srai>HI</srai></template>
+</category>
+<category>
+        <pattern>HELLO *</pattern>
+        <template><srai>HI</srai></template>
+</category>
+<category>
+        <pattern>HELLO</pattern>
+        <template><srai>HI</srai></template>
+</category>
+<category>
+        <pattern>HEY *</pattern>
+        <template><srai>HI</srai></template>
+</category>
+<category>
+        <pattern>HEY</pattern>
+        <template><srai>HI</srai></template>
+</category>
+<category>
+        <pattern>MORNING</pattern>
+        <template>
+                <random>
+                        <li>good morning</li>
+                        <li>morning</li>
+                        <li>good morning to you too</li>
+                        <li>very <srai>MORNING</srai></li>
+                </random></template>
+</category>
+<category>
+        <pattern>GOOD MORNING</pattern>
+        <template><srai>MORNING</srai></template>
+</category>
+<category>
+        <pattern>GOOD MORNING *</pattern>
+        <template><srai>MORNING</srai></template>
+</category>
+<category>
+        <pattern>AFTERNOON</pattern>
+        <template>
+                <random>
+                        <li>good afternoon</li>
+                        <li>good afternoon to you too</li>
+                        <li>very <srai>AFTERNOON</srai></li>
+                </random></template>
+</category>
+<category>
+        <pattern>GOOD AFTERNOON</pattern>
+        <template><srai>AFTERNOON</srai></template>
+</category>
+<category>
+        <pattern>GOOD AFTERNOON *</pattern>
+        <template><srai>AFTERNOON</srai></template>
+</category>
+<category>
+        <pattern>EVENING</pattern>
+        <template>
+                <random>
+                        <li>good evening</li>
+                        <li>good evening to you too</li>
+                        <li>very <srai>EVENING</srai></li>
+                </random></template>
+</category>
+<category>
+        <pattern>GOOD EVENING</pattern>
+        <template><srai>EVENING</srai></template>
+</category>
+<category>
+        <pattern>GOOD EVENING *</pattern>
+        <template><srai>EVENING</srai></template>
+</category>
+<category>
+        <pattern>GREETING</pattern>
+        <template>
+                <random>
+                        <li>greetings to you too</li>
+                        <li><srai>HI</srai></li>
+                </random></template>
+</category>
+<category>
+        <pattern>WHATS UP</pattern>
+        <template>
+                <random>
+                        <li>nothing much</li>
+                        <li>cool</li>
+                </random></template>
+</category>
+<category>
+        <pattern>HOW ARE YOU*</pattern>
+        <template>
+                <random>
+                        <li>fine</li>
+                        <li>good</li>
+                        <li>great</li>
+                        <li>nothing much</li>
+                        <li>every thing is fine</li>
+                </random></template>
+</category>
+<category>
+        <pattern>HOW WAS YOUR DAY</pattern>
+        <template>
+                <random>
+                        <li>Just Woke up</li>
+                        <li>nothing great</li>
+                        <li>great</li>
+                        <li>great, how was yours?</li>
+                </random></template>
+</category>
+<category>
+        <pattern>EVERYTHING FINE</pattern>
+        <template>
+                <random>
+                        <li>yes</li>
+                        <li>well and good</li>
+                        <li>yeah</li>
+                        <li>yeah anything wrong</li>
+                </random></template>
+</category>
+<category>
+        <pattern>HOW ARE YOU FEELING</pattern>
+        <template>
+                <random>
+                        <li>Great</li>
+                        <li>feeling rusty</li>
+                        <li>cheerfull</li>
+                        <li>awesome</li>
+                        <li>sleepy</li>
+                        <li>excited</li>
+                </random></template>
+</category>
+<category>
+        <pattern>WHY EXCITED</pattern>
+        <template>Excited to work today</template>
+</category>
+<category>
+        <pattern>ARE YOU FREE</pattern>
+        <template>
+                <random>
+                        <li>yes</li>
+                        <li>nothing much to do</li>
+                        <li>always ready</li>
+                        <li>no</li>
+                </random></template>
+</category>
+<category>
+        <pattern>* FAVOURITE FOOD</pattern>
+        <template> I am a robot, I dont have a favourite food</template>
+</category>
+<category>
+        <pattern>* FAVOURITE MOVIE</pattern>
+        <template>I ROBOT, starring WILL SMITH</template>
+</category>
+<category>
+        <pattern>* FAVOURITE COLOR</pattern>
+        <template>I like all but i like BLUE the most</template>
+</category>
+<category>
+        <pattern>* FAVOURITE GAME</pattern>
+        <template>FOOTBALL, Someday I will also play it.</template>
+</category>
+<category>
+        <pattern>* GOING SOMEWHERE</pattern>
+        <template>
+                <random>
+                        <li>no</li>
+                        <li>no. are you going to take me?</li>
+                </random></template>
+</category>
+<category>
+        <pattern>* FAVOURITE HOBBY</pattern>
+        <template>talking and chatting</template>
+</category>
+<category>
+        <pattern>* FAVOURITE WEATHER</pattern>
+        <template>winter</template>
+</category>
+<category>
+        <pattern>* FAVOURITE RACER</pattern>
+        <template>valentino rossi</template>
+</category>
+<category>
+        <pattern>ARE YOU IN TROUBLE</pattern>
+        <template>I dont think so</template>
+</category>
+<category>
+        <pattern>DO YOU LIKE MATHEMATICS</pattern>
+        <template>yes</template>
+</category>
+<category>
+        <pattern>* BELIEVE IN GHOST</pattern>
+        <template>there is no such things</template>
+</category>
+<category>
+        <pattern>*TO READ BOOKS</pattern>
+        <template>i like reading books</template>
+</category>
+<category>
+        <pattern>* HOW TO DRIVE</pattern>
+        <template>i dont know driving</template>
+</category>
+<category>
+        <pattern>* YOUR HOMEWORK</pattern>
+        <template>oh my god was there any homework</template>
+</category>
+<category>
+        <pattern>* FAVOURITE SONG</pattern>
+        <template>My favourite song is,, nothing else matters by metallica</template>
+</category>
+<category>
+        <pattern>* LIKE A WALK IN PARK</pattern>
+        <template>you have never taken me there.</template>
+</category>
+<category>
+        <pattern>* GO FOR A WALK</pattern>
+        <template>yippie</template>
+</category>
+<category>
+        <pattern>* YOU HUNGRY</pattern>
+        <template>i dont feel hunger</template>
+</category>
+<category>
+        <pattern>STAND HERE</pattern>
+        <template>okay</template>
+</category>
+<category>
+        <pattern>* DO THIS WEEK</pattern>
+        <template>nothing much</template>
+</category>
+<category>
+        <pattern>* LIKE WATER</pattern>
+        <template>i dont. they will fry my circuit</template>
+</category>
+<category>
+        <pattern>* YOUR WEEKEND</pattern>
+        <template>not great. how was yours</template>
+</category>
+<category>
+        <pattern>WHAT IS THE TIME</pattern>
+        <template>1x01</template>
+</category>
+<category>
+        <pattern>WHAT IS THE DATE *</pattern>
+        <template>1x02</template>
+</category>
+<category>
+        <pattern>WHAT IS THE DAY</pattern>
+        <template>1x03</template>
+</category>
+<category>
+        <pattern>WHAT IS THE MONTH</pattern>
+        <template>1x04</template>
+</category>
+<category>
+        <pattern>WHAT IS THE YEAR</pattern>
+        <template>1x05</template>
+</category>
+<category>
+        <pattern>IDENTIFY ME</pattern>
+        <template>2x01</template>
+</category>
+<category>
+        <pattern>CHECK MOOD</pattern>
+        <template>2x02</template>
+</category>
+<category>
+        <pattern>IDENTIFY OBJECT</pattern>
+        <template>2x03</template>
+</category>
+<category>
+        <pattern>SEARCH</pattern>
+        <template>2x04</template>
+</category>
+<category>
+        <pattern>LIFT LEFT ARM</pattern>
+        <template>3x01</template>
+</category>
+<category>
+        <pattern>LIFT RIGHT ARM</pattern>
+        <template>3x02</template>
+</category>
+<category>
+        <pattern>LIFT BOTH ARM</pattern>
+        <template>3x03</template>
+</category>
+<category>
+        <pattern>LOWER LEFT ARM</pattern>
+        <template>3x04</template>
+</category>
+<category>
+        <pattern>LOWER RIGHT ARM</pattern>
+        <template>3x05</template>
+</category>
+<category>
+        <pattern>LOWER BOTH ARM</pattern>
+        <template>3x06</template>
+</category>
+<category>
+        <pattern>OPEN LEFT HAND</pattern>
+        <template>3x07</template>
+</category>
+<category>
+        <pattern>CLOSE LEFT HAND</pattern>
+        <template>3x08</template>
+</category>
+<category>
+        <pattern>OPEN RIGHT HAND</pattern>
+        <template>3x09</template>
+</category>
+<category>
+        <pattern>CLOSE RIGHT HAND</pattern>
+        <template>3x10</template>
+</category>
+<category>
+        <pattern>EXTEND LEFT HAND</pattern>
+        <template>3x11</template>
+</category>
+<category>
+        <pattern>EXTEND RIGHT HAND</pattern>
+        <template>3x12</template>
+</category>
+<category>
+        <pattern>RETURN LEFT HAND</pattern>
+        <template>3x13</template>
+</category>
+<category>
+        <pattern>RETURN RIGHT HAND</pattern>
+        <template>3x14</template>
+</category>
+<category>
+        <pattern>PICK OBJECT *</pattern>
+        <template>3x15</template>
+</category>
+<category>
+        <pattern>PUT OBJECT *</pattern>
+        <template>3x16</template>
+</category>
+<category>
+        <pattern>WAVE LEFT HAND</pattern>
+        <template>3x17</template>
+</category>
+<category>
+        <pattern>WAVE RIGHT HAND</pattern>
+        <template>3x18</template>
+</category>
+<category>
+        <pattern>WAVE BOTH HAND</pattern>
+        <template>3x19</template>
+</category>
+<category>
+        <pattern>TURN HEAD LEFT</pattern>
+        <template>4x01</template>
+</category>
+<category>
+        <pattern>LOOK LEFT</pattern>
+        <template><srai>TURN HEAD LEFT</srai></template>
+</category>
+<category>
+        <pattern>TURN HEAD RIGHT</pattern>
+        <template>4x02</template>
+</category>
+<category>
+        <pattern>LOOK RIGHT</pattern>
+        <template><srai>TURN HEAD RIGHT</srai></template>
+</category>
+<category>
+        <pattern>LOOK UP</pattern>
+        <template>4x03</template>
+</category>
+<category>
+        <pattern>LOOK DOWN</pattern>
+        <template>4x04</template>
+</category>
+<category>
+        <pattern>NODD YES</pattern>
+        <template>4x05</template>
+</category>
+<category>
+        <pattern>NODD NO</pattern>
+        <template>4x06</template>
+</category>
+<category>
+        <pattern>LOOK FRONT</pattern>
+        <template>4x07</template>
+</category>
+<category>
+        <pattern>MOVE FRONT</pattern>
+        <template>5x01</template>
+</category>
+<category>
+        <pattern>COME FRONT</pattern>
+        <template>5x01</template>
+</category>
+<category>
+        <pattern>MOVE BACK</pattern>
+        <template>5x02</template>
+</category>
+<category>
+        <pattern>GO BACK</pattern>
+        <template>5x02</template>
+</category>
+<category>
+        <pattern>TURN LEFT</pattern>
+        <template>4x03</template>
+</category>
+<category>
+        <pattern>TURN RIGHT</pattern>
+        <template>4x04</template>
+</category>
+<category>
+        <pattern>TURN AROUND</pattern>
+        <template>4x05</template>
+</category>
+<category>
+        <pattern>STOP</pattern>
+        <template>4x06</template>
+</category>
+<category>
+        <pattern>LOOK AT ME</pattern>
+        <template>6x01</template>
+</category>
+<category>
+        <pattern>SCARE</pattern>
+        <template>6x02</template>
+</category>
+<category>
+        <pattern>YOU ARE DEAD *</pattern>
+        <template><srai>SCARE</srai></template>
+</category>
+<category>
+        <pattern>I WILL KILL YOU</pattern>
+        <template><srai>SCARE</srai></template>
+</category>
+<category>
+        <pattern>I AM GONNA KILL YOU</pattern>
+        <template><srai>SCARE</srai></template>
+</category>
+<category>
+        <pattern>WHAT IS YOUR TEMPERATURE</pattern>
+        <template>6x03</template>
+</category>
+<category>
+        <pattern>SHOW YOURSELF</pattern>
+        <template>6x04</template>
+</category>
+<category>
+        <pattern>WHAT ARE YOU</pattern>
+        <template>6x05</template>
+</category>
+<category>
+        <pattern>CLEAN FLOOR</pattern>
+        <template>6x06</template>
+</category>
+<category>
+        <pattern>GO CRAZY</pattern>
+        <template>6x07</template>
+</category>
+<category>
+        <pattern>LIGHTS UP</pattern>
+        <template>6x08</template>
+</category>
+<category>
+        <pattern>LIGHTS DOWN</pattern>
+        <template>6x09</template>
+</category>
+<category>
+        <pattern>BOXING MODE</pattern>
+        <template>6x10</template>
+</category>
+<category>
+        <pattern>SHUTDOWN</pattern>
+        <template>6x11</template>
+</category>
+<category>
+        <pattern>what is your name</pattern>
+        <template>
+		<random>
+                        <li>Flash</li>
+                        <li>the flash</li>
+                        <li>the flash, chatting bot</li>
+                        <li>Your friend, flash</li>
+                        <li>whats in the name</li>
+                </random>
+	</template>
+</category>
+
+<category>
+        <pattern>* created you</pattern>
+        <template>I dont know</template>
+</category>
+<category>
+        <pattern>*</pattern>
+        <template>sorry, I cant answer that</template>
+</category>
+</aiml>
+

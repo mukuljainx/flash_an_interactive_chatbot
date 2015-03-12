@@ -1,0 +1,37 @@
+#!/bin/bash
+
+cd ${0%/*}
+
+if [ "$1" = "-wait" ] ;
+then
+  sleep 4s
+fi
+
+./stop
+
+cp "./lispeak" "$HOME/.lispeak/bin/lispeak.py"
+cp "./lispeak" "$HOME/.lispeak/services/lispeak.py"
+cp "./lispeak" "./Recognition/bin/lispeak.py"
+cp "./lispeak" "./Microphone/lispeak.py"
+
+cp "./Setup/libraries/goslate.py" "$HOME/.lispeak/bin/"
+cp "./Setup/libraries/goslate.py" "$HOME/.lispeak/services/"
+cp "./Setup/libraries/goslate.py" "./Microphone/"
+
+FILEFOLDER=/tmp/lispeak_$(id -un)
+mkdir -p $FILEFOLDER
+
+./Microphone/notify.py 2>/dev/null &disown
+echo $! > $FILEFOLDER/notify.pid
+./Microphone/indicator_server.py 2>/dev/null &disown
+echo $! > $FILEFOLDER/indicator.pid
+
+shopt -s nullglob
+for f in $HOME/.lispeak/services/*.service
+do
+    echo $f
+    base=$(basename $f)
+    $f &disown
+    echo $! > $FILEFOLDER/$base.pid
+done
+

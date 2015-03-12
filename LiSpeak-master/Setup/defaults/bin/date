@@ -1,0 +1,24 @@
+#!/usr/bin/env python2.7
+
+import time,sys
+import lispeak
+
+
+cmd = sys.argv[1]
+
+try:
+    li = sys.argv[2]
+except:
+    li = True
+
+out = "Command "+str(cmd)+" not recognized"
+
+if cmd == "date":
+    out = time.strftime("%A, %B ") + str(int(time.strftime("%d")))
+elif cmd == "time":
+    out = time.strftime("%I:%M %p")
+    
+if li == True:
+    lispeak.displayNotification(out)
+else:
+    print out

@@ -1,0 +1,41 @@
+speech.flac
+result.json
+tmp.sp
+
+lispeak.py
+audio.mp3
+goslate.pyc
+
+/Recognition/bin/*
+/Recognition/dictionary
+/Recognition/modes/*
+
+#Process IDs
+*.pid
+
+# Object files
+*.o
+
+# Libraries
+*.lib
+*.a
+
+# Shared objects (inc. Windows DLLs)
+*.dll
+*.so
+*.so.*
+*.dylib
+
+# Executables
+*.exe
+*.out
+*.app
+
+#Python bytecode
+*.pyc
+*.pyo
+
+
+#Text editor's backup file
+*~
+*.swp

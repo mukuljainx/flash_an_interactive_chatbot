@@ -1,0 +1,22 @@
+#!/usr/bin/env python2.7
+import lispeak
+
+import dbus
+bus = dbus.SystemBus()
+power = bus.get_object('org.freedesktop.UPower',
+                       '/org/freedesktop/UPower/devices/battery_BAT0')
+iface = dbus.Interface(power, 'org.freedesktop.DBus.Properties')
+
+def get(prop):
+    return iface.Get('org.freedesktop.UPOwer.Device',prop)
+
+d = {}
+
+for each in ["Percentage","TimeToEmpty"]:
+    d[each] = get(each)
+    
+t = str(d["TimeToEmpty"] / 3600.0).split(".")
+m = 60 * (float(t[1]) / 10)
+t = str(t[0])+":"+str(int(m))[:2]
+
+lispeak.displayNotification({"title":str(d["Percentage"])+"%","message":"Time until empty: "+t})

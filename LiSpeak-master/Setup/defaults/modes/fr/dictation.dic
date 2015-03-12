@@ -1,0 +1,5 @@
+<fin[ de la],finir,sortir[ de la]> modalité dictation
+  mode main
+(LINE catch_all)
+  type "$catch_all$\\r"
+

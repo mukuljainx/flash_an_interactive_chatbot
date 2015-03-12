@@ -1,0 +1,6 @@
+<exit,end,stop,leave> dictation mode
+  mode main
+[return ][ to]main mode
+  mode main
+(LINE catch_all)
+  type "$catch_all$\\r"

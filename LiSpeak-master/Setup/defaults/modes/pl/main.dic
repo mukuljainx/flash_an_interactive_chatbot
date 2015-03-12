@@ -1,0 +1,46 @@
+<powiedz,mów,czytaj> (LINE words)
+  say "$words$"
+<napisz,pisz> (LINE words)
+  type "$words$\\r"
+cofnij
+  xType "keydown Control_L" "key z" "keyup Control_L"
+powtórz
+  xType "keydown Shift_L" "keydown Control_L" "key z" "keyup Shift_L" "keyup Control_L"
+wytnij
+  xType "keydown Control_L" "key x" "keyup Control_L"
+wklej[ tekst]
+  xType "keydown Control_L" "key v" "keyup Control_L"
+kopiuj[ tekst]
+  xType "keydown Control_L" "key c" "keyup Control_L"
+zaznacz <wszystko,cały>[ tekst]
+  xType "keydown Control_L" "key a" "keyup Control_L"
+
+idź[ ]do (LINE site)
+  goto "$site$"
+  
+<otwórz,pokaż> [moje ]<dokumenty,pliki>
+  open "xdg-user-dir DOCUMENTS | xargs nautilus"
+<otwórz,pokaż> [moją ]muzykę[ folder]
+  open "xdg-user-dir MUSIC | xargs nautilus"
+<otwórz,pokaż> [mój ]katalog domowy
+  open "xdg-user-dir | xargs nautilus"
+<otwórz,pokaż> [moje ]<filmy,wideo>
+  open "xdg-user-dir VIDEOS | xargs nautilus"
+<otwórz,pokaż> [moje ]<obrazy, zdjęcia>
+  open "xdg-user-dir PICTURES | xargs nautilus"
+<otwórz,pokaż> [moje ]pobrane
+  open "xdg-user-dir DOWNLOAD | xargs nautilus"
+
+otwórz [google ]chrome
+  open "google-chrome"
+  
+otwórz firefox
+  open "firefox"
+
+<[<pokaż,wyświetl>] datę,który <dzisiaj,dziś> jest>
+  date date
+<[<pokaż,wyświetl>] czas,która godzina>
+  date time
+  
+(LINE word)
+  wolf "$word$"
